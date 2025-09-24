@@ -1,12 +1,12 @@
 spring:
   application:
-    name: medisynapse
+    name: medisynapse-hms
   output:
     ansi:
       enabled: always
 
   datasource:
-    url: jdbc:mysql://localhost:3306/medisynapse_db?zeroDateTimeBehavior=convertToNull&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false
+    url: jdbc:mysql://localhost:3306/medisynapse_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -26,11 +26,11 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
-    try-it-out-enabled: true
-    operations-sorter: method
-    tags-sorter: alpha
-  show-actuator: true
-  use-management-port: false
+    operationsSorter: method
+    tagsSorter: alpha
+    displayRequestDuration: true
+    displayOperationId: false
+  show-actuator: false
 
 # Server Configuration
 server:
@@ -45,3 +45,8 @@ logging:
     org.springframework.web: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/medisynapse-hms.log
