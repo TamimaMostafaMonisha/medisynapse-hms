@@ -36,9 +36,45 @@ public class Hospital {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @Column(name = "type")
+    private String type;
+
+    @Column(name = "address")
+    private String addressString;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_address_id", referencedColumnName = "id")
     private Address address;
+
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "total_beds")
+    private Integer totalBeds;
+
+    @Column(name = "available_beds")
+    private Integer availableBeds;
+
+    @Column(name = "total_departments")
+    private Integer totalDepartments;
+
+    @Column(name = "total_staff")
+    private Integer totalStaff;
+
+    @Column(name = "established")
+    private String established;
+
+    @Column(name = "accreditation")
+    private String accreditation;
+
+    @Column(name = "status")
+    private String status;
+
+    @Column(name = "admin_id")
+    private Long adminId;
 
     @Column(name = "contact", length = 100)
     private String contact;
