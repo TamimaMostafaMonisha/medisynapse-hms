@@ -1,0 +1,23 @@
+package com.mhms.medisynapse.service;
+
+import com.mhms.medisynapse.dto.AvailableHospitalDto;
+import com.mhms.medisynapse.dto.CreateHospitalAdminDto;
+import com.mhms.medisynapse.dto.HospitalAdminPagedResponseDto;
+import com.mhms.medisynapse.dto.HospitalAdminResponseDto;
+import com.mhms.medisynapse.dto.PasswordResetResponseDto;
+import com.mhms.medisynapse.dto.ResetPasswordDto;
+import com.mhms.medisynapse.dto.UpdateHospitalAdminDto;
+
+import java.util.List;
+
+public interface UserService {
+    HospitalAdminResponseDto createHospitalAdmin(CreateHospitalAdminDto createHospitalAdminDto);
+
+    HospitalAdminResponseDto updateHospitalAdmin(Long id, UpdateHospitalAdminDto updateHospitalAdminDto);
+
+    PasswordResetResponseDto resetHospitalAdminPassword(Long id, ResetPasswordDto resetPasswordDto);
+
+    List<AvailableHospitalDto> getAvailableHospitals();
+
+    HospitalAdminPagedResponseDto getHospitalAdmins(int page, int size, String sortBy, String sortDir, Long hospitalId);
+}

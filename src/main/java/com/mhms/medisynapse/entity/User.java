@@ -44,6 +44,9 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Column(name = "phone", length = 20)
+    private String phone;
+
     @Column(name = "national_id", unique = true, length = 50)
     private String nationalId;
 
@@ -72,6 +75,12 @@ public class User {
 
     @Column(name = "last_updated_dt")
     private LocalDateTime lastUpdatedDt;
+
+    @Column(name = "password_reset_dt")
+    private LocalDateTime passwordResetDt;
+
+    @Column(name = "last_login_dt")
+    private LocalDateTime lastLoginDt;
 
     @Column(name = "created_by")
     private Long createdBy;
