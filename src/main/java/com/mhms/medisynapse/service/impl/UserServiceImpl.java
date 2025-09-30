@@ -366,6 +366,7 @@ public class UserServiceImpl implements UserService {
                 .email(user.getEmail())
                 .role(user.getRole().name())
                 .phone(user.getPhone())
+                .nationalId(user.getNationalId())
                 .hospitalId(user.getHospital() != null ? user.getHospital().getId() : null)
                 .hospitalName(user.getHospital() != null ? user.getHospital().getName() : null)
                 .status(user.getStatus().name())

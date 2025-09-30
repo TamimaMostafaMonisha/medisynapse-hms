@@ -18,6 +18,7 @@ public class HospitalAdminListDto {
     private String email;
     private String role;
     private String phone;
+    private String nationalId;
     private Long hospitalId;
     private String hospitalName;
     private String status;
