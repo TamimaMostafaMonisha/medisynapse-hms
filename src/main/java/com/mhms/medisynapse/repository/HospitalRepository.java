@@ -14,6 +14,14 @@ import java.util.Optional;
 @Repository
 public interface HospitalRepository extends JpaRepository<Hospital, Long> {
 
+    boolean existsByNameIgnoreCase(String name);
+
+    boolean existsByEmailIgnoreCase(String email);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
+
+    boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id);
+
     @Query("SELECT h FROM Hospital h LEFT JOIN FETCH h.address WHERE " +
             "(:name IS NULL OR LOWER(h.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
             "(:contact IS NULL OR LOWER(h.contact) LIKE LOWER(CONCAT('%', :contact, '%')))")

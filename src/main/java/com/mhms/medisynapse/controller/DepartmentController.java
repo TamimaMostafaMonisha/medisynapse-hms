@@ -1,5 +1,7 @@
 package com.mhms.medisynapse.controller;
 
+import com.mhms.medisynapse.constants.ErrorMessages;
+import com.mhms.medisynapse.constants.SuccessMessages;
 import com.mhms.medisynapse.dto.ApiResponse;
 import com.mhms.medisynapse.dto.DepartmentTypeDto;
 import com.mhms.medisynapse.service.DepartmentTypeService;
@@ -30,12 +32,12 @@ public class DepartmentController {
             List<DepartmentTypeDto> departments = departmentTypeService.getAllAvailableDepartmentTypes();
 
             log.info("Successfully retrieved {} available department types", departments.size());
-            return ResponseEntity.ok(ApiResponse.success("Available departments retrieved successfully", departments));
+            return ResponseEntity.ok(ApiResponse.success(SuccessMessages.DEPARTMENT_LIST_RETRIEVED, departments));
 
         } catch (Exception e) {
             log.error("Error retrieving available departments: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to retrieve available departments: " + e.getMessage()));
+                    .body(ApiResponse.error(ErrorMessages.INTERNAL_SERVER_ERROR + ": " + e.getMessage()));
         }
     }
 }

@@ -14,6 +14,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -24,6 +25,7 @@ import java.util.Set;
 @Entity
 @Table(name = "hospital")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
@@ -39,7 +41,7 @@ public class Hospital {
     @Column(name = "type")
     private String type;
 
-    @Column(name = "address")
+    @Column(name = "address_string")
     private String addressString;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -91,9 +93,11 @@ public class Hospital {
     @Column(name = "updated_by")
     private Long updatedBy;
 
+    @Builder.Default
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    @Builder.Default
     @Column(name = "version")
     private Integer version = 1;
 

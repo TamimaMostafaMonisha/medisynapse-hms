@@ -1,15 +1,16 @@
 package com.mhms.medisynapse.exception;
 
 import com.mhms.medisynapse.dto.ApiResponse;
-import com.mhms.medisynapse.service.impl.UserServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +36,104 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    /**
+     * Handle InvalidDataException (400)
+     */
+    @ExceptionHandler(InvalidDataException.class)
+    public ResponseEntity<ApiResponse<Object>> handleInvalidDataException(
+            InvalidDataException ex,
+            HttpServletRequest request) {
+
+        log.warn("InvalidDataException: {} at path: {}", ex.getMessage(), request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                ApiResponse.<Object>builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(null)
+                        .build()
+        );
+    }
+
+    /**
+     * Handle BusinessLogicException (422)
+     */
+    @ExceptionHandler(BusinessLogicException.class)
+    public ResponseEntity<ApiResponse<Object>> handleBusinessLogicException(
+            BusinessLogicException ex,
+            HttpServletRequest request) {
+
+        log.warn("BusinessLogicException: {} at path: {}", ex.getMessage(), request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(
+                ApiResponse.<Object>builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(null)
+                        .build()
+        );
+    }
+
+    /**
+     * Handle IllegalArgumentException (400)
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIllegalArgumentException(
+            IllegalArgumentException ex,
+            HttpServletRequest request) {
+
+        log.warn("IllegalArgumentException: {} at path: {}", ex.getMessage(), request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                ApiResponse.<Object>builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(null)
+                        .build()
+        );
+    }
+
+    /**
+     * Handle MissingServletRequestParameterException (400)
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMissingServletRequestParameterException(
+            MissingServletRequestParameterException ex,
+            HttpServletRequest request) {
+
+        log.warn("Missing request parameter: {} at path: {}", ex.getParameterName(), request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                ApiResponse.<Object>builder()
+                        .success(false)
+                        .message(String.format("Required parameter '%s' is missing", ex.getParameterName()))
+                        .data(null)
+                        .build()
+        );
+    }
+
+    /**
+     * Handle MethodArgumentTypeMismatchException (400)
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
+
+        log.warn("Type mismatch for parameter: {} at path: {}", ex.getName(), request.getRequestURI());
+
+        String message = String.format("Invalid value for parameter '%s'. Expected type: %s",
+                ex.getName(), ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown");
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                ApiResponse.<Object>builder()
+                        .success(false)
+                        .message(message)
+                        .data(null)
+                        .build()
+        );
     }
 
     /**
@@ -66,9 +165,9 @@ public class GlobalExceptionHandler {
     /**
      * Handle Custom ValidationException (400) - Custom validation errors
      */
-    @ExceptionHandler(UserServiceImpl.ValidationException.class)
+    @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ApiResponse<Object>> handleCustomValidationException(
-            UserServiceImpl.ValidationException ex,
+            ValidationException ex,
             HttpServletRequest request) {
 
         log.warn("Custom validation error at path: {}", request.getRequestURI());

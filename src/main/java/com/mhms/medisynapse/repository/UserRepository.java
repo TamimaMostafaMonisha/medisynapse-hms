@@ -43,7 +43,35 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u WHERE u.phone = :phone AND u.id != :excludeId AND u.isActive = true")
     boolean existsByPhoneExcludingId(@Param("phone") String phone, @Param("excludeId") Long excludeId);
 
-    @Query("SELECT u FROM User u LEFT JOIN FETCH u.hospital WHERE u.role = 'HOSPITAL_ADMIN' AND u.isActive = true " +
-            "AND (:hospitalId IS NULL OR u.hospital.id = :hospitalId)")
+    @Query("SELECT COUNT(a) FROM Appointment a WHERE a.doctor.id = :doctorId AND DATE(a.startTime) = CURRENT_DATE AND a.status IN ('SCHEDULED', 'IN_PROGRESS')")
+    Long countTodayAppointmentsByDoctor(@Param("doctorId") Long doctorId);
+
+    @Query("SELECT u FROM User u WHERE u.hospital.id = :hospitalId AND u.role = 'DOCTOR' AND u.isActive = true ORDER BY u.name ASC")
+    List<User> findDoctorsByHospital(@Param("hospitalId") Long hospitalId);
+
+    @Query("SELECT COUNT(u) FROM User u " +
+            "WHERE u.department.id = :departmentId " +
+            "AND u.role = 'DOCTOR' " +
+            "AND u.status = 'ACTIVE' " +
+            "AND u.isActive = true")
+    Long countActiveDoctorsByDepartmentId(@Param("departmentId") Long departmentId);
+
+    @Query("SELECT COUNT(u) FROM User u " +
+            "WHERE u.hospital.id = :hospitalId " +
+            "AND u.role = :role " +
+            "AND u.isActive = true")
+    Long countByHospitalIdAndRole(@Param("hospitalId") Long hospitalId, @Param("role") User.UserRole role);
+
+    @Query("SELECT u FROM User u " +
+            "WHERE u.hospital.id = :hospitalId " +
+            "AND u.role = 'HOSPITAL_ADMIN' " +
+            "AND u.isActive = true " +
+            "ORDER BY u.name ASC")
+    List<User> findHospitalAdmins(@Param("hospitalId") Long hospitalId);
+
+    @Query("SELECT u FROM User u " +
+            "WHERE (:hospitalId IS NULL OR u.hospital.id = :hospitalId) " +
+            "AND u.role = 'HOSPITAL_ADMIN' " +
+            "AND u.isActive = true")
     Page<User> findHospitalAdmins(@Param("hospitalId") Long hospitalId, Pageable pageable);
 }

@@ -55,6 +55,25 @@ public class Patient {
     @Column(name = "contact", length = 100)
     private String contact;
 
+    // Additional fields for enhanced patient information
+    @Column(name = "email", length = 255)
+    private String email;
+
+    @Column(name = "blood_group", length = 10)
+    private String bloodGroup;
+
+    @Column(name = "emergency_contact_name", length = 255)
+    private String emergencyContactName;
+
+    @Column(name = "emergency_contact_relation", length = 100)
+    private String emergencyContactRelation;
+
+    @Column(name = "emergency_contact_phone", length = 20)
+    private String emergencyContactPhone;
+
+    @Column(name = "medical_history", columnDefinition = "TEXT")
+    private String medicalHistory; // Stored as JSON string or comma-separated values
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_address_id", referencedColumnName = "id")
     private Address address;

@@ -1,5 +1,7 @@
 package com.mhms.medisynapse.controller;
 
+import com.mhms.medisynapse.constants.ErrorMessages;
+import com.mhms.medisynapse.constants.SuccessMessages;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -53,12 +55,11 @@ public class HealthController {
     })
     public ResponseEntity<Map<String, Object>> liveness() {
         Map<String, Object> response = new HashMap<>();
-        response.put("status", "UP");
+        response.put("status", SuccessMessages.SYSTEM_HEALTH_CHECK_PASSED);
         response.put("timestamp", LocalDateTime.now());
         response.put("application", "Medisynapse HMS");
         response.put("version", "1.0.0");
         response.put("check", "liveness");
-
         return ResponseEntity.ok(response);
     }
 
@@ -102,23 +103,21 @@ public class HealthController {
         response.put("application", "Medisynapse HMS");
         response.put("version", "1.0.0");
         response.put("check", "readiness");
-
-        // Check database connectivity
         try (Connection connection = dataSource.getConnection()) {
             if (connection.isValid(5)) {
-                response.put("status", "UP");
-                response.put("database", "UP");
+                response.put("status", SuccessMessages.SYSTEM_HEALTH_CHECK_PASSED);
+                response.put("database", SuccessMessages.DATABASE_CONNECTION_ESTABLISHED);
                 return ResponseEntity.ok(response);
             } else {
-                response.put("status", "DOWN");
-                response.put("database", "DOWN");
-                response.put("error", "Database connection is not valid");
+                response.put("status", ErrorMessages.SERVICE_UNAVAILABLE);
+                response.put("database", ErrorMessages.SERVICE_UNAVAILABLE);
+                response.put("error", ErrorMessages.SERVICE_UNAVAILABLE);
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
             }
         } catch (SQLException e) {
-            response.put("status", "DOWN");
-            response.put("database", "DOWN");
-            response.put("error", "Database connection failed: " + e.getMessage());
+            response.put("status", ErrorMessages.SERVICE_UNAVAILABLE);
+            response.put("database", ErrorMessages.SERVICE_UNAVAILABLE);
+            response.put("error", ErrorMessages.SERVICE_UNAVAILABLE + ": " + e.getMessage());
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
         }
     }

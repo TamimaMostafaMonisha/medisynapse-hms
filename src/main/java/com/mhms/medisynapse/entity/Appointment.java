@@ -15,7 +15,9 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -25,6 +27,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "appointment")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
@@ -50,12 +53,60 @@ public class Appointment {
     @JoinColumn(name = "fk_hospital_id", nullable = false, referencedColumnName = "id")
     private Hospital hospital;
 
-    @Column(name = "date_time", nullable = false)
-    private LocalDateTime dateTime;
+    @Column(name = "start_time", nullable = false)
+    private LocalDateTime startTime;
 
+    @Column(name = "end_time", nullable = false)
+    private LocalDateTime endTime;
+
+    @Builder.Default
+    @Column(name = "duration_minutes", nullable = false)
+    private Integer durationMinutes = 30;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "appointment_type", nullable = false)
+    private AppointmentType appointmentType = AppointmentType.CONSULTATION;
+
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private AppointmentStatus status = AppointmentStatus.SCHEDULED;
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+
+    @Column(name = "reason", columnDefinition = "TEXT")
+    private String reason;
+
+    @Column(name = "cancellation_reason", columnDefinition = "TEXT")
+    private String cancellationReason;
+
+    @Builder.Default
+    @Column(name = "reminder_sent")
+    private Boolean reminderSent = false;
+
+    @Column(name = "reminder_sent_at")
+    private LocalDateTime reminderSentAt;
+
+    @Column(name = "checked_in_at")
+    private LocalDateTime checkedInAt;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
+    @Builder.Default
+    @Column(name = "is_recurring")
+    private Boolean isRecurring = false;
+
+    @Column(name = "recurring_pattern")
+    private String recurringPattern;
+
+    @Column(name = "parent_appointment_id")
+    private Long parentAppointmentId;
 
     @Column(name = "created_dt", nullable = false, updatable = false)
     private LocalDateTime createdDt;
@@ -69,9 +120,12 @@ public class Appointment {
     @Column(name = "updated_by")
     private Long updatedBy;
 
+    @Builder.Default
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    @Builder.Default
+    @Version
     @Column(name = "version")
     private Integer version = 1;
 
@@ -83,14 +137,28 @@ public class Appointment {
     protected void onCreate() {
         createdDt = LocalDateTime.now();
         lastUpdatedDt = LocalDateTime.now();
+
+        // Auto-calculate end time if not set
+        if (endTime == null && startTime != null && durationMinutes != null) {
+            endTime = startTime.plusMinutes(durationMinutes);
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         lastUpdatedDt = LocalDateTime.now();
+
+        // Auto-calculate end time if start time or duration changed
+        if (startTime != null && durationMinutes != null) {
+            endTime = startTime.plusMinutes(durationMinutes);
+        }
     }
 
     public enum AppointmentStatus {
-        SCHEDULED, CONFIRMED, CANCELLED, COMPLETED, NO_SHOW
+        SCHEDULED, CONFIRMED, CANCELLED, COMPLETED, NO_SHOW, IN_PROGRESS, RESCHEDULED
+    }
+
+    public enum AppointmentType {
+        CONSULTATION, EMERGENCY, FOLLOW_UP, ROUTINE_CHECKUP, SURGICAL_CONSULTATION, DIAGNOSTIC
     }
 }

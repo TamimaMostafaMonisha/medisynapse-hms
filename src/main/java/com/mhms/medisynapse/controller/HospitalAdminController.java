@@ -1,5 +1,6 @@
 package com.mhms.medisynapse.controller;
 
+import com.mhms.medisynapse.constants.SuccessMessages;
 import com.mhms.medisynapse.dto.ApiResponse;
 import com.mhms.medisynapse.dto.AvailableHospitalDto;
 import com.mhms.medisynapse.dto.CreateHospitalAdminDto;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/hospital-admins")
+@RequestMapping("/api/v1/hospital-admin")
 @RequiredArgsConstructor
 @Slf4j
 public class HospitalAdminController {
@@ -45,7 +46,7 @@ public class HospitalAdminController {
         log.info("Hospital admin created successfully with ID: {}", createdAdmin.getId());
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Hospital admin created successfully", createdAdmin));
+                .body(ApiResponse.success(SuccessMessages.HOSPITAL_ADMIN_CREATED, createdAdmin));
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -60,7 +61,7 @@ public class HospitalAdminController {
         log.info("Hospital admin updated successfully with ID: {}", updatedAdmin.getId());
 
         return ResponseEntity.ok()
-                .body(ApiResponse.success("Hospital admin updated successfully", updatedAdmin));
+                .body(ApiResponse.success(SuccessMessages.HOSPITAL_ADMIN_UPDATED, updatedAdmin));
     }
 
     @PutMapping(value = "/{id}/reset-password", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -75,7 +76,7 @@ public class HospitalAdminController {
         log.info("Password reset successfully for hospital admin with ID: {}", resetResponse.getId());
 
         return ResponseEntity.ok()
-                .body(ApiResponse.success("Password reset successfully", resetResponse));
+                .body(ApiResponse.success(SuccessMessages.PASSWORD_RESET, resetResponse));
     }
 
     @GetMapping(value = "/available-hospitals", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -88,7 +89,7 @@ public class HospitalAdminController {
         log.info("Found {} available hospitals", availableHospitals.size());
 
         return ResponseEntity.ok()
-                .body(ApiResponse.success("Available hospitals retrieved successfully", availableHospitals));
+                .body(ApiResponse.success(SuccessMessages.HOSPITAL_LIST_RETRIEVED, availableHospitals));
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -108,6 +109,6 @@ public class HospitalAdminController {
                 pagedResponse.getData().size(), pagedResponse.getPagination().getTotalElements());
 
         return ResponseEntity.ok()
-                .body(ApiResponse.success("Hospital admins retrieved successfully", pagedResponse));
+                .body(ApiResponse.success(SuccessMessages.HOSPITAL_ADMIN_LIST_RETRIEVED, pagedResponse));
     }
 }

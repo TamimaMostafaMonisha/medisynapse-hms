@@ -94,6 +94,6 @@ public class Billing {
     }
 
     public enum BillingStatus {
-        PENDING, PAID, PARTIALLY_PAID, CANCELLED, REFUNDED
+        DRAFT, PENDING, PAID, PARTIALLY_PAID, CANCELLED, REFUNDED
     }
 }

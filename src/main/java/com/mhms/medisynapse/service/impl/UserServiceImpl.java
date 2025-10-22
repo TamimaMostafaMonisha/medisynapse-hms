@@ -2,6 +2,9 @@ package com.mhms.medisynapse.service.impl;
 
 import com.mhms.medisynapse.dto.AvailableHospitalDto;
 import com.mhms.medisynapse.dto.CreateHospitalAdminDto;
+import com.mhms.medisynapse.dto.DoctorAvailabilityDto;
+import com.mhms.medisynapse.dto.DoctorDto;
+import com.mhms.medisynapse.dto.DoctorListResponseDto;
 import com.mhms.medisynapse.dto.HospitalAdminListDto;
 import com.mhms.medisynapse.dto.HospitalAdminPagedResponseDto;
 import com.mhms.medisynapse.dto.HospitalAdminResponseDto;
@@ -9,9 +12,12 @@ import com.mhms.medisynapse.dto.PaginationInfo;
 import com.mhms.medisynapse.dto.PasswordResetResponseDto;
 import com.mhms.medisynapse.dto.ResetPasswordDto;
 import com.mhms.medisynapse.dto.UpdateHospitalAdminDto;
+import com.mhms.medisynapse.entity.Appointment;
 import com.mhms.medisynapse.entity.Hospital;
 import com.mhms.medisynapse.entity.User;
 import com.mhms.medisynapse.exception.ResourceNotFoundException;
+import com.mhms.medisynapse.exception.ValidationException;
+import com.mhms.medisynapse.repository.AppointmentRepository;
 import com.mhms.medisynapse.repository.HospitalRepository;
 import com.mhms.medisynapse.repository.UserRepository;
 import com.mhms.medisynapse.service.UserService;
@@ -25,10 +31,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +49,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final HospitalRepository hospitalRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AppointmentRepository appointmentRepository;
 
     @Override
     public HospitalAdminResponseDto createHospitalAdmin(CreateHospitalAdminDto createDto) {
@@ -324,6 +335,131 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
+    // Doctor management methods - implementing only the requested APIs
+    @Override
+    public DoctorListResponseDto getDoctorsByHospital(Long hospitalId) {
+        log.info("Fetching doctors for hospital ID: {}", hospitalId);
+
+        // Check if hospital exists
+        if (!hospitalRepository.existsById(hospitalId)) {
+            throw new ResourceNotFoundException("Hospital not found with ID: " + hospitalId);
+        }
+
+        // Fetch doctors associated with the hospital
+        List<User> doctors = userRepository.findDoctorsByHospital(hospitalId);
+
+        log.info("Found {} doctors for hospital ID: {}", doctors.size(), hospitalId);
+
+        // Map to DTOs with additional information
+        List<DoctorDto> doctorDtos = doctors.stream()
+                .map(this::mapToDoctorDto)
+                .toList();
+
+        return DoctorListResponseDto.builder()
+                .doctors(doctorDtos)
+                .build();
+    }
+
+    @Override
+    public DoctorAvailabilityDto getDoctorAvailability(Long doctorId, LocalDate date) {
+        log.info("Fetching availability for doctor ID: {} on date: {}", doctorId, date);
+
+        // Find the doctor
+        User doctor = userRepository.findActiveUserById(doctorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Doctor not found with id: " + doctorId));
+
+        // Validate that the user is actually a doctor
+        if (doctor.getRole() != User.UserRole.DOCTOR) {
+            throw new ResourceNotFoundException("Doctor not found with id: " + doctorId);
+        }
+
+        // Fetch appointments for the doctor on the specified date
+        List<Appointment> appointments = appointmentRepository.findAppointmentsByDoctorAndDate(doctorId, date);
+
+        // Generate time slots (assuming 30-minute slots from 9 AM to 5 PM)
+        List<DoctorAvailabilityDto.TimeSlotDto> timeSlots = generateTimeSlots(appointments);
+
+        return DoctorAvailabilityDto.builder()
+                .doctorId(doctorId)
+                .date(date)
+                .availableSlots(timeSlots)
+                .build();
+    }
+
+    private DoctorDto mapToDoctorDto(User user) {
+        // Get today's appointment count
+        Long todayAppointments = userRepository.countTodayAppointmentsByDoctor(user.getId());
+
+        // Create sample schedule (in real implementation, this would come from a schedule table)
+        Map<String, DoctorDto.ScheduleDto> schedule = createDefaultSchedule();
+
+        return DoctorDto.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .specialty(user.getDepartment() != null ? user.getDepartment().getName() : "General")
+                .department(user.getDepartment() != null ? user.getDepartment().getName() : "General")
+                .phone(user.getPhone())
+                .email(user.getEmail())
+                .hospitalId(user.getHospital() != null ? user.getHospital().getId() : null)
+                .status(user.getStatus().name())
+                .availabilityStatus(user.getStatus() == User.UserStatus.ACTIVE ? "Available" : "Unavailable")
+                .todayAppointments(todayAppointments.intValue())
+                .schedule(schedule)
+                .build();
+    }
+
+    private Map<String, DoctorDto.ScheduleDto> createDefaultSchedule() {
+        Map<String, DoctorDto.ScheduleDto> schedule = new HashMap<>();
+        DoctorDto.ScheduleDto defaultSchedule = DoctorDto.ScheduleDto.builder()
+                .start("09:00")
+                .end("17:00")
+                .build();
+
+        schedule.put("monday", defaultSchedule);
+        schedule.put("tuesday", defaultSchedule);
+        schedule.put("wednesday", defaultSchedule);
+        schedule.put("thursday", defaultSchedule);
+        schedule.put("friday", defaultSchedule);
+
+        return schedule;
+    }
+
+    private List<DoctorAvailabilityDto.TimeSlotDto> generateTimeSlots(List<Appointment> appointments) {
+        List<DoctorAvailabilityDto.TimeSlotDto> timeSlots = new ArrayList<>();
+
+        // Generate 30-minute slots from 9:00 AM to 5:00 PM
+        LocalTime startTime = LocalTime.of(9, 0);
+        LocalTime endTime = LocalTime.of(17, 0);
+
+        LocalTime currentTime = startTime;
+        while (currentTime.isBefore(endTime)) {
+            LocalTime slotEndTime = currentTime.plusMinutes(30);
+
+            // Check if this slot is booked
+            final LocalTime finalCurrentTime = currentTime;
+            final LocalTime finalSlotEndTime = slotEndTime;
+
+            Optional<Appointment> bookedAppointment = appointments.stream()
+                    .filter(apt -> {
+                        LocalTime aptTime = apt.getStartTime().toLocalTime();
+                        return !aptTime.isBefore(finalCurrentTime) && aptTime.isBefore(finalSlotEndTime);
+                    })
+                    .findFirst();
+
+            DoctorAvailabilityDto.TimeSlotDto.TimeSlotDtoBuilder slotBuilder = DoctorAvailabilityDto.TimeSlotDto.builder()
+                    .startTime(currentTime.toString())
+                    .endTime(slotEndTime.toString())
+                    .available(bookedAppointment.isEmpty());
+
+            bookedAppointment.ifPresent(appointment -> slotBuilder.appointmentId(appointment.getId()));
+
+            timeSlots.add(slotBuilder.build());
+            currentTime = slotEndTime;
+        }
+
+        return timeSlots;
+    }
+
     private AvailableHospitalDto mapToAvailableHospitalDto(Hospital hospital) {
         return AvailableHospitalDto.builder()
                 .id(hospital.getId())
@@ -344,19 +480,19 @@ public class UserServiceImpl implements UserService {
             address.append(hospital.getAddress().getLine1());
         }
         if (hospital.getAddress().getCity() != null) {
-            if (address.length() > 0) address.append(", ");
+            if (!address.isEmpty()) address.append(", ");
             address.append(hospital.getAddress().getCity());
         }
         if (hospital.getAddress().getState() != null) {
-            if (address.length() > 0) address.append(", ");
+            if (!address.isEmpty()) address.append(", ");
             address.append(hospital.getAddress().getState());
         }
         if (hospital.getAddress().getPostalCode() != null) {
-            if (address.length() > 0) address.append(" ");
+            if (!address.isEmpty()) address.append(" ");
             address.append(hospital.getAddress().getPostalCode());
         }
 
-        return address.length() > 0 ? address.toString() : "Address not available";
+        return !address.isEmpty() ? address.toString() : "Address not available";
     }
 
     private HospitalAdminListDto mapToHospitalAdminListDto(User user) {
@@ -373,18 +509,5 @@ public class UserServiceImpl implements UserService {
                 .createdAt(user.getCreatedDt())
                 .lastLoginAt(user.getLastLoginDt())
                 .build();
-    }
-
-    public static class ValidationException extends RuntimeException {
-        private final Map<String, String> errors;
-
-        public ValidationException(String message, Map<String, String> errors) {
-            super(message);
-            this.errors = errors;
-        }
-
-        public Map<String, String> getErrors() {
-            return errors;
-        }
     }
 }

@@ -2,12 +2,15 @@ package com.mhms.medisynapse.service;
 
 import com.mhms.medisynapse.dto.AvailableHospitalDto;
 import com.mhms.medisynapse.dto.CreateHospitalAdminDto;
+import com.mhms.medisynapse.dto.DoctorAvailabilityDto;
+import com.mhms.medisynapse.dto.DoctorListResponseDto;
 import com.mhms.medisynapse.dto.HospitalAdminPagedResponseDto;
 import com.mhms.medisynapse.dto.HospitalAdminResponseDto;
 import com.mhms.medisynapse.dto.PasswordResetResponseDto;
 import com.mhms.medisynapse.dto.ResetPasswordDto;
 import com.mhms.medisynapse.dto.UpdateHospitalAdminDto;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface UserService {
@@ -20,4 +23,9 @@ public interface UserService {
     List<AvailableHospitalDto> getAvailableHospitals();
 
     HospitalAdminPagedResponseDto getHospitalAdmins(int page, int size, String sortBy, String sortDir, Long hospitalId);
+
+    // Doctor management methods
+    DoctorListResponseDto getDoctorsByHospital(Long hospitalId);
+
+    DoctorAvailabilityDto getDoctorAvailability(Long doctorId, LocalDate date);
 }
