@@ -8,7 +8,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
@@ -50,15 +49,17 @@ public class Ehr {
     @Column(name = "visit_date", nullable = false)
     private LocalDate visitDate;
 
-    @Column(name = "symptoms")
-    private String symptoms;
+    // TODO: Add symptoms field back when the database schema is updated to include the 'symptoms' column.
+    // @Column(name = "symptoms")
+    // private String symptoms;
 
     @Column(name = "diagnosis")
     private String diagnosis;
 
-    @Lob
-    @Column(name = "notes", columnDefinition = "TEXT")
-    private String notes;
+    // TODO: Add notes field back when the database schema is updated to include the 'notes' column.
+    // @Lob
+    // @Column(name = "notes", columnDefinition = "TEXT")
+    // private String notes;
 
     @Column(name = "created_dt", nullable = false, updatable = false)
     private LocalDateTime createdDt;

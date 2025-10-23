@@ -44,7 +44,7 @@ public class PatientManagementController {
             @RequestParam(required = false) Patient.PatientStatus status,
             @RequestParam(required = false) String search) {
 
-        log.info("GET /api/v1/hospital-admin/patients - Hospital ID: {}, Page: {}, Size: {}, Status: {}, Search: {}",
+        log.info("Hospital ID: {}, Page: {}, Size: {}, Status: {}, Search: {}",
                 hospitalId, page, size, status, search);
 
         // Create pageable with sorting by created date (newest first)
@@ -66,7 +66,7 @@ public class PatientManagementController {
     public ResponseEntity<ApiResponse<CreatePatientResponseDto>> createPatient(
             @Valid @RequestBody CreatePatientRequestDto request) {
 
-        log.info("POST /api/v1/hospital-admin/patients - Creating new patient: {}", request.getName());
+        log.info("Creating new patient: {}", request.getName());
 
         CreatePatientResponseDto response = patientService.createPatient(request);
 

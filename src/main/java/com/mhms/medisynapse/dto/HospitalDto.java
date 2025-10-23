@@ -27,7 +27,7 @@ public class HospitalDto {
     private String address;
 
     @NotBlank(message = "Phone number is required")
-    @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Invalid phone format")
+    @Pattern(regexp = "^[+]?[0-9]{10,15}$", message = "Phone number must be 10-15 digits, optionally starting with +")
     private String phone;
 
     @NotBlank(message = "Email is required")

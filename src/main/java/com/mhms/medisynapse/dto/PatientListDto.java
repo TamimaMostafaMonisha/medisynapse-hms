@@ -18,6 +18,7 @@ public class PatientListDto {
     private String gender;
     private String phone;
     private String email;
+    private String address;
     private String bloodGroup;
     private Long assignedDoctorId;
     private String assignedDoctorName;

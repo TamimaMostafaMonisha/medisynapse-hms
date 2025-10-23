@@ -26,7 +26,7 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = false, exclude = {"hospitals", "users", "patients"})
 public class Address {
 
     @Id

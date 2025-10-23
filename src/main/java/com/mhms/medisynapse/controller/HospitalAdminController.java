@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/hospital-admin")
+@RequestMapping("/api/v1/hospital-admins")
 @RequiredArgsConstructor
 @Slf4j
 public class HospitalAdminController {

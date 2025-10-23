@@ -18,6 +18,8 @@ import com.mhms.medisynapse.repository.AdmissionRepository;
 import com.mhms.medisynapse.repository.AppointmentRepository;
 import com.mhms.medisynapse.repository.HospitalRepository;
 import com.mhms.medisynapse.repository.PatientRepository;
+import com.mhms.medisynapse.repository.AddressRepository;
+import com.mhms.medisynapse.repository.PatientHospitalRepository;
 import com.mhms.medisynapse.service.PatientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,6 +44,8 @@ public class PatientServiceImpl implements PatientService {
     private final AdmissionRepository admissionRepository;
     private final HospitalRepository hospitalRepository;
     private final AppointmentRepository appointmentRepository;
+    private final AddressRepository addressRepository;
+    private final PatientHospitalRepository patientHospitalRepository;
 
     @Override
     public PatientPagedResponseDto getPatientsByHospitalId(Long hospitalId,
@@ -83,29 +88,55 @@ public class PatientServiceImpl implements PatientService {
         Long assignedDoctorId = null;
         String assignedDoctorName = null;
 
-        // Find the latest admission for this patient
-        List<Admission> admissions = admissionRepository.findRecentAdmissionsByHospitalId(
-                patient.getPatientHospitals().iterator().next().getHospital().getId(),
+        // Defensive copy of patient hospitals to avoid ConcurrentModificationException
+        List<PatientHospital> patientHospitals = new ArrayList<>();
+        if (patient.getPatientHospitals() != null) {
+            patientHospitals.addAll(patient.getPatientHospitals());
+        }
+        Long hospitalId = null;
+        if (!patientHospitals.isEmpty() && patientHospitals.get(0).getHospital() != null) {
+            hospitalId = patientHospitals.get(0).getHospital().getId();
+        }
+
+        List<Admission> admissions = new ArrayList<>();
+        if (hospitalId != null) {
+            admissions.addAll(admissionRepository.findRecentAdmissionsByHospitalId(
+                hospitalId,
                 java.time.LocalDateTime.now().minusDays(30)
-        );
+            ));
+        }
 
         for (Admission admission : admissions) {
-            if (admission.getPatient().getId().equals(patient.getId()) &&
+            if (admission.getPatient() != null && admission.getPatient().getId().equals(patient.getId()) &&
                     "ADMITTED".equals(admission.getStatus().toString())) {
                 roomNumber = admission.getBedNo();
                 admissionStatus = "Admitted";
-                assignedDoctorId = admission.getAdmittingDoctor().getId();
-                assignedDoctorName = admission.getAdmittingDoctor().getName();
+                if (admission.getAdmittingDoctor() != null) {
+                    assignedDoctorId = admission.getAdmittingDoctor().getId();
+                    assignedDoctorName = admission.getAdmittingDoctor().getName();
+                }
                 break;
             }
         }
 
-        // Create emergency contact (mock data since not in current entity)
+        // Create emergency contact from actual patient data
         EmergencyContactDto emergencyContact = EmergencyContactDto.builder()
-                .name("Emergency Contact") // Default placeholder
-                .relation("Family")
-                .phone(patient.getContact() != null ? patient.getContact().replace("555", "556") : null)
+                .name(patient.getEmergencyContactName())
+                .relation(patient.getEmergencyContactRelation())
+                .phone(patient.getEmergencyContactPhone())
                 .build();
+
+        // Extract address as a string
+        String addressString = null;
+        if (patient.getAddress() != null) {
+            addressString = patient.getAddress().getLine1();
+            if (patient.getAddress().getLine2() != null && !patient.getAddress().getLine2().trim().isEmpty()) {
+                addressString += ", " + patient.getAddress().getLine2();
+            }
+            if (patient.getAddress().getCity() != null) {
+                addressString += ", " + patient.getAddress().getCity();
+            }
+        }
 
         return PatientListDto.builder()
                 .id(patient.getId())
@@ -113,8 +144,9 @@ public class PatientServiceImpl implements PatientService {
                 .age(age)
                 .gender(capitalizeFirstLetter(patient.getGender().toString()))
                 .phone(patient.getContact())
-                .email(generateMockEmail(patient.getFirstName(), patient.getLastName())) // Mock email
-                .bloodGroup(generateMockBloodGroup()) // Mock blood group
+                .email(patient.getEmail()) // Use actual email from database
+                .address(addressString)
+                .bloodGroup(patient.getBloodGroup()) // Use actual blood group from database
                 .assignedDoctorId(assignedDoctorId)
                 .assignedDoctorName(assignedDoctorName)
                 .status(admissionStatus)
@@ -180,7 +212,8 @@ public class PatientServiceImpl implements PatientService {
             address.setCountry("Not Specified"); // Default value
             address.setType(Address.AddressType.HOME);
             address.setIsActive(true);
-            // Note: Address would need to be saved separately if we had AddressRepository
+            // Manual persist: save address first
+            address = addressRepository.save(address);
         }
 
         // Create Patient entity
@@ -191,9 +224,18 @@ public class PatientServiceImpl implements PatientService {
         patient.setDob(dateOfBirth);
         patient.setGender(gender);
         patient.setContact(request.getPhone());
+        patient.setEmail(request.getEmail());
+        patient.setBloodGroup(request.getBloodGroup());
         patient.setAddress(address);
         patient.setStatus(Patient.PatientStatus.ACTIVE);
         patient.setIsActive(true);
+
+        // Set emergency contact details if provided
+        if (request.getEmergencyContact() != null) {
+            patient.setEmergencyContactName(request.getEmergencyContact().getName());
+            patient.setEmergencyContactRelation(request.getEmergencyContact().getRelation());
+            patient.setEmergencyContactPhone(request.getEmergencyContact().getPhone());
+        }
 
         // Save patient
         Patient savedPatient = patientRepository.save(patient);
@@ -206,7 +248,8 @@ public class PatientServiceImpl implements PatientService {
         patientHospital.setPatientIdNumber("PAT-" + savedPatient.getId());
         patientHospital.setStatus(PatientHospital.PatientHospitalStatus.ACTIVE);
         patientHospital.setIsActive(true);
-        // Note: PatientHospital would need to be saved if we had PatientHospitalRepository
+        // Persist PatientHospital association
+        patientHospitalRepository.save(patientHospital);
 
         // Calculate age for response
         Integer age = null;
