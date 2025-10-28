@@ -6,13 +6,18 @@ import com.mhms.medisynapse.dto.BedManagementResponseDto;
 import com.mhms.medisynapse.dto.DashboardStatisticsDto;
 import com.mhms.medisynapse.dto.DashboardStatisticsRequestDto;
 import com.mhms.medisynapse.dto.DepartmentPerformanceResponseDto;
+import com.mhms.medisynapse.dto.HospitalAdminResponseDto;
+import com.mhms.medisynapse.security.CustomUserDetails;
 import com.mhms.medisynapse.service.BedService;
 import com.mhms.medisynapse.service.DashboardService;
 import com.mhms.medisynapse.service.DepartmentPerformanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -75,5 +80,25 @@ public class HospitalAdminDashboardController {
         return ResponseEntity.ok(
                 ApiResponse.success("Department performance metrics retrieved successfully", performanceData)
         );
+    }
+
+    @GetMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<HospitalAdminResponseDto>> getAuthenticatedAdminProfile() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized"));
+        }
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        if (!"HOSPITAL_ADMIN".equals(userDetails.getRole().name())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Forbidden: Not a hospital admin"));
+        }
+        HospitalAdminResponseDto profile = dashboardService.getHospitalAdminProfile(userDetails.getId());
+        if (profile == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Profile not found"));
+        }
+        return ResponseEntity.ok(ApiResponse.success("Profile fetched successfully", profile));
     }
 }

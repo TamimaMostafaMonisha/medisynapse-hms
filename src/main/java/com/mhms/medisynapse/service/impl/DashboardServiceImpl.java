@@ -4,12 +4,14 @@ import com.mhms.medisynapse.dto.BedOccupancyDto;
 import com.mhms.medisynapse.dto.DashboardStatisticsDto;
 import com.mhms.medisynapse.dto.DashboardStatisticsRequestDto;
 import com.mhms.medisynapse.dto.DepartmentStatsDto;
+import com.mhms.medisynapse.dto.HospitalAdminResponseDto;
 import com.mhms.medisynapse.dto.RecentAdmissionDto;
 import com.mhms.medisynapse.dto.StaffOnDutyDto;
 import com.mhms.medisynapse.entity.Admission;
 import com.mhms.medisynapse.entity.DepartmentType;
 import com.mhms.medisynapse.entity.Hospital;
 import com.mhms.medisynapse.entity.User;
+import com.mhms.medisynapse.exception.ResourceNotFoundException;
 import com.mhms.medisynapse.repository.AdmissionRepository;
 import com.mhms.medisynapse.repository.AppointmentRepository;
 import com.mhms.medisynapse.repository.DepartmentTypeRepository;
@@ -174,5 +176,27 @@ public class DashboardServiceImpl implements DashboardService {
                             .build();
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public HospitalAdminResponseDto getHospitalAdminProfile(Long id) {
+        User user = userRepository.findActiveUserById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hospital admin not found with id: " + id));
+        if (user.getRole() != User.UserRole.HOSPITAL_ADMIN) {
+            throw new ResourceNotFoundException("Hospital admin not found with id: " + id);
+        }
+        return HospitalAdminResponseDto.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .phone(user.getPhone())
+                .nationalId(user.getNationalId())
+                .hospitalId(user.getHospital() != null ? user.getHospital().getId() : null)
+                .hospitalName(user.getHospital() != null ? user.getHospital().getName() : null)
+                .status(user.getStatus().name())
+                .createdAt(user.getCreatedDt())
+                .lastUpdatedAt(user.getLastUpdatedDt())
+                .build();
     }
 }
