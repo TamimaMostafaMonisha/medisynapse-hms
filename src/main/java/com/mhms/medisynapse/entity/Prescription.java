@@ -75,6 +75,23 @@ public class Prescription {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    // NEW FIELDS for Lab Test Workflow
+    @Enumerated(EnumType.STRING)
+    @Column(name = "prescription_type")
+    private PrescriptionType prescriptionType = PrescriptionType.FINAL;
+
+    @Column(name = "clinical_diagnosis", length = 500)
+    private String clinicalDiagnosis;
+
+    @Column(name = "follow_up_required")
+    private Boolean followUpRequired = false;
+
+    @Column(name = "follow_up_date")
+    private LocalDate followUpDate;
+
+    @Column(name = "superseded_by")
+    private Long supersededBy;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
     private PrescriptionStatus status = PrescriptionStatus.ACTIVE;
@@ -128,13 +145,25 @@ public class Prescription {
         ACTIVE("Active"),
         COMPLETED("Completed"),
         CANCELLED("Cancelled"),
-        EXPIRED("Expired");
+        EXPIRED("Expired"),
+        SUPERSEDED("Superseded");
 
         private final String displayName;
 
         PrescriptionStatus(String displayName) {
             this.displayName = displayName;
         }
+    }
 
+    @Getter
+    public enum PrescriptionType {
+        PRELIMINARY("Preliminary - Pending Lab Results"),
+        FINAL("Final Prescription");
+
+        private final String displayName;
+
+        PrescriptionType(String displayName) {
+            this.displayName = displayName;
+        }
     }
 }

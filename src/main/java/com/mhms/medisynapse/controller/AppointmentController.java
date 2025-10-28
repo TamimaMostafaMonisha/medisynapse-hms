@@ -97,6 +97,11 @@ public class AppointmentController {
             @Parameter(description = "Hospital ID for security") @RequestParam Long hospitalId,
             @Parameter(description = "Updated by user ID") @RequestHeader(value = "X-User-ID", required = false, defaultValue = "1") Long updatedBy) {
 
+        // Combine appointmentDate and appointmentTime into startTime if provided and startTime is null
+        if (request.getStartTime() == null && request.getAppointmentDate() != null && request.getAppointmentTime() != null) {
+            request.setStartTime(request.getAppointmentDate().atTime(request.getAppointmentTime()));
+        }
+
         ApiResponse<AppointmentDto> response = appointmentService.updateAppointment(appointmentId, request, hospitalId, updatedBy);
         return ResponseEntity.ok(response);
     }

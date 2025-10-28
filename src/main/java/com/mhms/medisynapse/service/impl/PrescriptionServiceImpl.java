@@ -1,19 +1,26 @@
 package com.mhms.medisynapse.service.impl;
 
+import com.mhms.medisynapse.dto.ComprehensivePrescriptionResponse;
 import com.mhms.medisynapse.dto.CreatePrescriptionRequest;
+import com.mhms.medisynapse.dto.LabTestOrderResponse;
+import com.mhms.medisynapse.dto.PrescriptionHistoryItem;
 import com.mhms.medisynapse.dto.PrescriptionResponseDto;
+import com.mhms.medisynapse.dto.PrescriptionWithTestsRequest;
 import com.mhms.medisynapse.dto.UpdatePrescriptionRequest;
 import com.mhms.medisynapse.entity.Appointment;
 import com.mhms.medisynapse.entity.Hospital;
+import com.mhms.medisynapse.entity.LabTestOrder;
 import com.mhms.medisynapse.entity.Patient;
 import com.mhms.medisynapse.entity.Prescription;
 import com.mhms.medisynapse.entity.User;
 import com.mhms.medisynapse.exception.ResourceNotFoundException;
 import com.mhms.medisynapse.repository.AppointmentRepository;
 import com.mhms.medisynapse.repository.HospitalRepository;
+import com.mhms.medisynapse.repository.LabTestOrderRepository;
 import com.mhms.medisynapse.repository.PatientRepository;
 import com.mhms.medisynapse.repository.PrescriptionRepository;
 import com.mhms.medisynapse.repository.UserRepository;
+import com.mhms.medisynapse.service.LabTestOrderService;
 import com.mhms.medisynapse.service.PrescriptionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +29,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,6 +45,8 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     private final PatientRepository patientRepository;
     private final AppointmentRepository appointmentRepository;
     private final HospitalRepository hospitalRepository;
+    private final LabTestOrderService labTestOrderService;
+    private final LabTestOrderRepository labTestOrderRepository;
 
     @Override
     public PrescriptionResponseDto createPrescription(CreatePrescriptionRequest request, Long doctorId) {
@@ -222,6 +233,139 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional
+    public ComprehensivePrescriptionResponse createComprehensivePrescription(Long appointmentId, PrescriptionWithTestsRequest request) {
+        log.info("Creating comprehensive prescription for appointment: {}", appointmentId);
+        log.info("Prescription type: {}, Medications: {}, Lab tests: {}",
+                request.getPrescriptionType(),
+                request.getMedications() != null ? request.getMedications().size() : 0,
+                request.getLabTestOrders() != null ? request.getLabTestOrders().size() : 0);
+
+        // Validate appointment
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + appointmentId));
+
+        // Validate doctor
+        User doctor = userRepository.findById(request.getDoctorId())
+                .orElseThrow(() -> new ResourceNotFoundException("Doctor not found"));
+
+        // Validate patient
+        Patient patient = patientRepository.findById(request.getPatientId())
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
+
+        List<Long> prescriptionIds = new ArrayList<>();
+        List<Long> labOrderIds = new ArrayList<>();
+
+        // Create prescriptions for each medication
+        if (request.getMedications() != null && !request.getMedications().isEmpty()) {
+            for (PrescriptionWithTestsRequest.MedicationDto med : request.getMedications()) {
+                Prescription prescription = new Prescription();
+                prescription.setPatient(patient);
+                prescription.setDoctor(doctor);
+                prescription.setHospital(appointment.getHospital());
+                prescription.setAppointment(appointment);
+                prescription.setMedicationName(med.getMedicationName());
+                prescription.setDosage(med.getDosage());
+                prescription.setFrequency(med.getFrequency());
+                prescription.setDuration(med.getDuration());
+                prescription.setInstructions(request.getInstructions());
+                prescription.setNotes(request.getNotes());
+                prescription.setPrescriptionDate(LocalDate.now());
+                prescription.setPrescriptionType(Prescription.PrescriptionType.valueOf(request.getPrescriptionType()));
+                prescription.setClinicalDiagnosis(request.getClinicalDiagnosis());
+                prescription.setFollowUpRequired(request.getFollowUpRequired());
+                prescription.setFollowUpDate(request.getFollowUpDate());
+                prescription.setStatus(Prescription.PrescriptionStatus.ACTIVE);
+                prescription.setCreatedBy(request.getDoctorId());
+                prescription.setIsActive(true);
+
+                Prescription saved = prescriptionRepository.save(prescription);
+                prescriptionIds.add(saved.getId());
+            }
+            log.info("Created {} prescriptions", prescriptionIds.size());
+        }
+
+        // Create lab test orders
+        if (request.getLabTestOrders() != null && !request.getLabTestOrders().isEmpty()) {
+            List<LabTestOrderResponse> labOrders = labTestOrderService.createLabTestOrders(
+                    appointmentId,
+                    request.getLabTestOrders()
+            );
+            labOrderIds = labOrders.stream()
+                    .map(LabTestOrderResponse::getId)
+                    .collect(Collectors.toList());
+            log.info("Created {} lab test orders", labOrderIds.size());
+
+            // Link lab orders to first prescription if medications exist
+            if (!prescriptionIds.isEmpty()) {
+                Long firstPrescriptionId = prescriptionIds.get(0);
+                Prescription firstPrescription = prescriptionRepository.findById(firstPrescriptionId)
+                        .orElseThrow();
+
+                labOrders.forEach(order -> {
+                    LabTestOrder labOrder = labTestOrderRepository.findById(order.getId())
+                            .orElseThrow();
+                    labOrder.setPrescription(firstPrescription);
+                    labTestOrderRepository.save(labOrder);
+                });
+            }
+        }
+
+        return ComprehensivePrescriptionResponse.builder()
+                .prescriptionId(!prescriptionIds.isEmpty() ? prescriptionIds.get(0) : null)
+                .prescriptionIds(prescriptionIds)
+                .labOrderIds(labOrderIds)
+                .prescriptionType(request.getPrescriptionType())
+                .medicationCount(prescriptionIds.size())
+                .labTestCount(labOrderIds.size())
+                .message("Comprehensive prescription created successfully")
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PrescriptionHistoryItem> getPrescriptionHistory(Long appointmentId) {
+        log.info("Fetching prescription history for appointment: {}", appointmentId);
+
+        List<Prescription> prescriptions = prescriptionRepository
+                .findByAppointmentIdOrderByCreatedDtDesc(appointmentId);
+
+        // Group by creation time to identify prescription sets
+        return prescriptions.stream()
+                .collect(Collectors.groupingBy(
+                        p -> p.getCreatedDt().withNano(0).withSecond(0)  // Group by minute
+                ))
+                .entrySet().stream()
+                .map(entry -> {
+                    LocalDateTime createdAt = entry.getKey();
+                    List<Prescription> group = entry.getValue();
+                    Prescription first = group.get(0);
+
+                    // Count associated lab orders
+                    int labTestCount = (int) labTestOrderRepository
+                            .findByAppointmentIdOrderByOrderedAtDesc(appointmentId)
+                            .stream()
+                            .filter(lab -> lab.getOrderedAt() != null &&
+                                    Math.abs(lab.getOrderedAt().toLocalTime().toSecondOfDay() -
+                                            createdAt.toLocalTime().toSecondOfDay()) < 60)
+                            .count();
+
+                    return PrescriptionHistoryItem.builder()
+                            .id(first.getId())
+                            .appointmentId(appointmentId)
+                            .prescriptionType(first.getPrescriptionType() != null ?
+                                    first.getPrescriptionType().toString() : "FINAL")
+                            .createdAt(createdAt)
+                            .doctorName("Dr. " + first.getDoctor().getName())
+                            .medicationCount(group.size())
+                            .labTestOrderCount(labTestCount)
+                            .status(first.getStatus().toString())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
     // Helper methods
 
     private void validateDoctor(Long doctorId) {
@@ -259,4 +403,3 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                 .build();
     }
 }
-

@@ -1,6 +1,19 @@
 package com.mhms.medisynapse.service.impl;
 
-import com.mhms.medisynapse.dto.*;
+import com.mhms.medisynapse.dto.AppointmentDetailDto;
+import com.mhms.medisynapse.dto.AppointmentDetailsResponseDto;
+import com.mhms.medisynapse.dto.DoctorAppointmentDto;
+import com.mhms.medisynapse.dto.DoctorAppointmentsResponseDto;
+import com.mhms.medisynapse.dto.DoctorDashboardStatisticsDto;
+import com.mhms.medisynapse.dto.DoctorPatientDto;
+import com.mhms.medisynapse.dto.DoctorPatientsResponseDto;
+import com.mhms.medisynapse.dto.EmergencyContactDto;
+import com.mhms.medisynapse.dto.LabTestOrderResponse;
+import com.mhms.medisynapse.dto.PatientDetailDto;
+import com.mhms.medisynapse.dto.PrescriptionDto;
+import com.mhms.medisynapse.dto.PreviousAppointmentDto;
+import com.mhms.medisynapse.dto.UpdateAppointmentStatusRequest;
+import com.mhms.medisynapse.dto.VitalSignsDto;
 import com.mhms.medisynapse.entity.Admission;
 import com.mhms.medisynapse.entity.Appointment;
 import com.mhms.medisynapse.entity.Patient;
@@ -13,6 +26,7 @@ import com.mhms.medisynapse.repository.PatientRepository;
 import com.mhms.medisynapse.repository.PrescriptionRepository;
 import com.mhms.medisynapse.repository.UserRepository;
 import com.mhms.medisynapse.service.DoctorService;
+import com.mhms.medisynapse.service.LabTestOrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -36,14 +50,14 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class DoctorServiceImpl implements DoctorService {
 
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private final UserRepository userRepository;
     private final PatientRepository patientRepository;
     private final PrescriptionRepository prescriptionRepository;
     private final AppointmentRepository appointmentRepository;
     private final AdmissionRepository admissionRepository;
-
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    private final LabTestOrderService labTestOrderService;
 
     @Override
     public DoctorDashboardStatisticsDto getDashboardStatistics(Long doctorId) {
@@ -380,6 +394,10 @@ public class DoctorServiceImpl implements DoctorService {
         // Get vital signs (from latest appointment or EHR)
         VitalSignsDto vitalSigns = getLatestVitalSigns(patient.getId(), doctorId);
 
+        // NEW: Get lab test orders for this appointment
+        List<LabTestOrderResponse> labTestOrders = labTestOrderService.getLabOrdersForAppointment(appointmentId);
+        log.info("Found {} lab test orders for appointment {}", labTestOrders.size(), appointmentId);
+
         return AppointmentDetailsResponseDto.builder()
                 .appointment(appointmentDetail)
                 .patient(patientDetail)
@@ -387,6 +405,7 @@ public class DoctorServiceImpl implements DoctorService {
                 .previousAppointments(previousAppointments)
                 .prescriptions(prescriptions)
                 .vitalSigns(vitalSigns)
+                .labTestOrders(labTestOrders)  // NEW: Include lab test orders
                 .build();
     }
 
@@ -545,7 +564,7 @@ public class DoctorServiceImpl implements DoctorService {
                 return "Follow-up";
             default:
                 return type.name().substring(0, 1).toUpperCase() +
-                       type.name().substring(1).toLowerCase();
+                        type.name().substring(1).toLowerCase();
         }
     }
 
@@ -554,7 +573,7 @@ public class DoctorServiceImpl implements DoctorService {
 
         // Convert to proper case
         return status.name().substring(0, 1).toUpperCase() +
-               status.name().substring(1).toLowerCase().replace("_", " ");
+                status.name().substring(1).toLowerCase().replace("_", " ");
     }
 
     @Override
@@ -598,8 +617,8 @@ public class DoctorServiceImpl implements DoctorService {
         Appointment completedAppointment = appointmentRepository.save(appointment);
         appointmentRepository.flush(); // Force immediate persistence
 
-        log.info("Appointment {} status changed from {} to COMPLETED successfully", 
-                 appointmentId, oldStatus);
+        log.info("Appointment {} status changed from {} to COMPLETED successfully",
+                appointmentId, oldStatus);
 
         return mapToAppointmentDto(completedAppointment);
     }

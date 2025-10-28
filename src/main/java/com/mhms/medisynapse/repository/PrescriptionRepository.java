@@ -59,5 +59,39 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
     List<Prescription> findByPatientAndHospital(
             @Param("patientId") Long patientId,
             @Param("hospitalId") Long hospitalId);
-}
 
+    /**
+     * Find prescriptions by appointment and prescription type
+     */
+    @Query("SELECT p FROM Prescription p WHERE p.appointment.id = :appointmentId " +
+            "AND p.prescriptionType = :type " +
+            "AND p.isActive = true " +
+            "ORDER BY p.createdDt DESC")
+    List<Prescription> findByAppointmentAndType(
+            @Param("appointmentId") Long appointmentId,
+            @Param("type") Prescription.PrescriptionType type
+    );
+
+    /**
+     * Find active prescriptions not superseded
+     */
+    @Query("SELECT p FROM Prescription p WHERE p.appointment.id = :appointmentId " +
+            "AND p.status = 'ACTIVE' AND p.supersededBy IS NULL " +
+            "AND p.isActive = true " +
+            "ORDER BY p.createdDt DESC")
+    List<Prescription> findActiveByAppointment(@Param("appointmentId") Long appointmentId);
+
+    /**
+     * Find all prescriptions by appointment (for history)
+     */
+    @Query("SELECT p FROM Prescription p WHERE p.appointment.id = :appointmentId " +
+            "AND p.isActive = true ORDER BY p.createdDt DESC")
+    List<Prescription> findByAppointmentIdOrderByCreatedDtDesc(@Param("appointmentId") Long appointmentId);
+
+    /**
+     * Count prescriptions by appointment
+     */
+    @Query("SELECT COUNT(p) FROM Prescription p WHERE p.appointment.id = :appointmentId " +
+            "AND p.isActive = true")
+    Long countByAppointmentId(@Param("appointmentId") Long appointmentId);
+}

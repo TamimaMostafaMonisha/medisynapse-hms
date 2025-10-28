@@ -42,7 +42,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
-                                "/api-docs/**"
+                                "/api-docs/**",
+                                "/lab-reports/**"  // Allow access to uploaded lab reports
                         ).permitAll()
 
                         // Super Admin only endpoints

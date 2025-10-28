@@ -18,6 +18,7 @@ public class AppointmentDetailsResponseDto {
     private List<PreviousAppointmentDto> previousAppointments;
     private List<PrescriptionDto> prescriptions;
     private VitalSignsDto vitalSigns;
+    private List<LabTestOrderResponse> labTestOrders;  // NEW: Lab test orders with results
 }
 
 

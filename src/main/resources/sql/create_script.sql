@@ -543,3 +543,7 @@ CREATE INDEX idx_shift_status ON shift (status);
 CREATE INDEX idx_audit_log_table_record ON audit_log (table_name, record_id);
 CREATE INDEX idx_audit_log_user ON audit_log (fk_user_id);
 CREATE INDEX idx_audit_log_created ON audit_log (created_dt);
+
+
+-- Success message
+SELECT 'Hospital Management System database table successfully created!' as result;
