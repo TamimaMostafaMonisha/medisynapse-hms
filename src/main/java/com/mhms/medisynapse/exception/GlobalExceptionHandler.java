@@ -5,6 +5,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -177,6 +180,82 @@ public class GlobalExceptionHandler {
                         .success(false)
                         .message(ex.getMessage())
                         .data(ex.getErrors())
+                        .build()
+        );
+    }
+
+    /**
+     * Handle BadCredentialsException (401) - Authentication failures
+     */
+    @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
+    public ResponseEntity<ApiResponse<Object>> handleBadCredentialsException(
+            org.springframework.security.authentication.BadCredentialsException ex,
+            HttpServletRequest request) {
+
+        log.warn("Authentication failed at path: {} - Invalid credentials", request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ApiResponse.<Object>builder()
+                        .success(false)
+                        .message("Invalid email or password")
+                        .data(null)
+                        .build()
+        );
+    }
+
+    /**
+     * Handle AuthenticationException (401) - General authentication errors
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleAuthenticationException(
+            org.springframework.security.core.AuthenticationException ex,
+            HttpServletRequest request) {
+
+        log.warn("Authentication error at path: {} - {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ApiResponse.<Object>builder()
+                        .success(false)
+                        .message("Authentication failed: " + ex.getMessage())
+                        .data(null)
+                        .build()
+        );
+    }
+
+    /**
+     * Handle AccessDeniedException (403) - Authorization failures
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(
+            org.springframework.security.access.AccessDeniedException ex,
+            HttpServletRequest request) {
+
+        log.warn("Access denied at path: {} - {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                ApiResponse.<Object>builder()
+                        .success(false)
+                        .message("Access denied: You don't have permission to access this resource")
+                        .data(null)
+                        .build()
+        );
+    }
+
+    /**
+     * Handle UsernameNotFoundException (401) - User not found during authentication
+     */
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleUsernameNotFoundException(
+            UsernameNotFoundException ex,
+            HttpServletRequest request) {
+
+        log.warn("User not found at path: {} - {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ApiResponse.<Object>builder()
+                        .success(false)
+                        .message("Invalid email or password")
+                        .data(null)
                         .build()
         );
     }

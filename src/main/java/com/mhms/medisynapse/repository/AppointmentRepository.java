@@ -91,11 +91,10 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("fromTime") LocalDateTime fromTime,
             @Param("toTime") LocalDateTime toTime);
 
-    // Today's appointments for a doctor
+    // Today's appointments for a doctor (ALL statuses including COMPLETED)
     @Query("SELECT a FROM Appointment a " +
             "WHERE a.doctor.id = :doctorId " +
             "AND DATE(a.startTime) = CURRENT_DATE " +
-            "AND a.status IN ('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS') " +
             "AND a.isActive = true " +
             "ORDER BY a.startTime ASC")
     List<Appointment> findTodayAppointmentsByDoctor(@Param("doctorId") Long doctorId);
@@ -217,4 +216,106 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     Long countTotalAppointmentsByDepartmentId(
             @Param("departmentId") Long departmentId,
             @Param("fromDate") LocalDateTime fromDate);
+
+    // Doctor-specific queries
+    @Query("SELECT COUNT(DISTINCT a.patient.id) FROM Appointment a " +
+            "WHERE a.doctor.id = :doctorId " +
+            "AND a.isActive = true")
+    Long countDistinctPatientsByDoctor(@Param("doctorId") Long doctorId);
+
+    @Query("SELECT COUNT(a) FROM Appointment a " +
+            "WHERE a.doctor.id = :doctorId " +
+            "AND a.status = 'COMPLETED' " +
+            "AND a.isActive = true")
+    Long countCompletedAppointmentsByDoctor(@Param("doctorId") Long doctorId);
+
+    @Query("SELECT COUNT(a) FROM Appointment a " +
+            "WHERE a.doctor.id = :doctorId " +
+            "AND a.status IN ('SCHEDULED', 'CONFIRMED') " +
+            "AND a.isActive = true")
+    Long countPendingAppointmentsByDoctor(@Param("doctorId") Long doctorId);
+
+    @Query("SELECT COUNT(a) FROM Appointment a " +
+            "WHERE a.doctor.id = :doctorId " +
+            "AND DATE(a.startTime) = CURRENT_DATE " +
+            "AND a.status IN ('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS') " +
+            "AND a.isActive = true")
+    Long countTodayAppointmentsByDoctor(@Param("doctorId") Long doctorId);
+
+    @Query("SELECT COUNT(a) FROM Appointment a " +
+            "WHERE a.doctor.id = :doctorId " +
+            "AND a.startTime > CURRENT_TIMESTAMP " +
+            "AND a.status IN ('SCHEDULED', 'CONFIRMED') " +
+            "AND a.isActive = true")
+    Long countUpcomingAppointmentsByDoctor(@Param("doctorId") Long doctorId);
+
+    @Query("SELECT a FROM Appointment a " +
+            "LEFT JOIN FETCH a.patient " +
+            "LEFT JOIN FETCH a.department " +
+            "WHERE a.doctor.id = :doctorId " +
+            "AND a.startTime > :startDate " +
+            "AND a.startTime < :endDate " +
+            "AND a.status IN ('SCHEDULED', 'CONFIRMED') " +
+            "AND a.isActive = true " +
+            "ORDER BY a.startTime ASC")
+    List<Appointment> findUpcomingAppointmentsByDoctor(
+            @Param("doctorId") Long doctorId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT a FROM Appointment a " +
+            "LEFT JOIN FETCH a.patient " +
+            "LEFT JOIN FETCH a.department " +
+            "WHERE a.doctor.id = :doctorId " +
+            "AND (:status IS NULL OR a.status = :status) " +
+            "AND (:startDate IS NULL OR DATE(a.startTime) >= :startDate) " +
+            "AND (:endDate IS NULL OR DATE(a.startTime) <= :endDate) " +
+            "AND a.isActive = true " +
+            "ORDER BY a.startTime DESC")
+    Page<Appointment> findAppointmentsByDoctorWithFilters(
+            @Param("doctorId") Long doctorId,
+            @Param("status") Appointment.AppointmentStatus status,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            Pageable pageable);
+
+    @Query("SELECT a FROM Appointment a " +
+            "WHERE a.id = :appointmentId " +
+            "AND a.doctor.id = :doctorId " +
+            "AND a.isActive = true")
+    Optional<Appointment> findByIdAndDoctorId(
+            @Param("appointmentId") Long appointmentId,
+            @Param("doctorId") Long doctorId);
+
+    @Query("SELECT MAX(a.completedAt) FROM Appointment a " +
+            "WHERE a.patient.id = :patientId " +
+            "AND a.doctor.id = :doctorId " +
+            "AND a.status = 'COMPLETED' " +
+            "AND a.isActive = true")
+    LocalDateTime findLastVisitDateByPatientAndDoctor(
+            @Param("patientId") Long patientId,
+            @Param("doctorId") Long doctorId);
+
+    @Query("SELECT a FROM Appointment a " +
+            "LEFT JOIN FETCH a.patient " +
+            "LEFT JOIN FETCH a.doctor " +
+            "WHERE a.id = :appointmentId " +
+            "AND a.doctor.id = :doctorId " +
+            "AND a.isActive = true")
+    Optional<Appointment> findAppointmentDetailsById(
+            @Param("appointmentId") Long appointmentId,
+            @Param("doctorId") Long doctorId);
+
+    @Query("SELECT a FROM Appointment a " +
+            "WHERE a.patient.id = :patientId " +
+            "AND a.doctor.id = :doctorId " +
+            "AND a.id != :excludeAppointmentId " +
+            "AND a.status = 'COMPLETED' " +
+            "AND a.isActive = true " +
+            "ORDER BY a.completedAt DESC")
+    List<Appointment> findPreviousAppointmentsByPatientAndDoctor(
+            @Param("patientId") Long patientId,
+            @Param("doctorId") Long doctorId,
+            @Param("excludeAppointmentId") Long excludeAppointmentId,
+            Pageable pageable);
 }

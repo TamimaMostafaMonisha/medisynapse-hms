@@ -2,6 +2,8 @@ package com.mhms.medisynapse.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -14,8 +16,10 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -31,11 +35,30 @@ public class Prescription {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_ehr_id", nullable = false, referencedColumnName = "id")
+    @JoinColumn(name = "fk_patient_id", nullable = false, referencedColumnName = "id")
+    private Patient patient;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_doctor_id", nullable = false, referencedColumnName = "id")
+    private User doctor;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_hospital_id", nullable = false, referencedColumnName = "id")
+    private Hospital hospital;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_appointment_id", referencedColumnName = "id")
+    private Appointment appointment;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_ehr_id", referencedColumnName = "id")
     private Ehr ehr;
 
-    @Column(name = "medication", nullable = false)
-    private String medication;
+    @Column(name = "prescription_date", nullable = false)
+    private LocalDate prescriptionDate;
+
+    @Column(name = "medication_name", nullable = false)
+    private String medicationName;
 
     @Column(name = "dosage", length = 100)
     private String dosage;
@@ -45,6 +68,25 @@ public class Prescription {
 
     @Column(name = "duration", length = 100)
     private String duration;
+
+    @Column(name = "instructions", columnDefinition = "TEXT")
+    private String instructions;
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 20)
+    private PrescriptionStatus status = PrescriptionStatus.ACTIVE;
+
+    @Column(name = "quantity")
+    private Integer quantity;
+
+    @Column(name = "refills_allowed")
+    private Integer refillsAllowed = 0;
+
+    @Column(name = "is_generic_allowed")
+    private Boolean isGenericAllowed = true;
 
     @Column(name = "created_dt", nullable = false, updatable = false)
     private LocalDateTime createdDt;
@@ -68,10 +110,31 @@ public class Prescription {
     protected void onCreate() {
         createdDt = LocalDateTime.now();
         lastUpdatedDt = LocalDateTime.now();
+        if (prescriptionDate == null) {
+            prescriptionDate = LocalDate.now();
+        }
+        if (status == null) {
+            status = PrescriptionStatus.ACTIVE;
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         lastUpdatedDt = LocalDateTime.now();
+    }
+
+    @Getter
+    public enum PrescriptionStatus {
+        ACTIVE("Active"),
+        COMPLETED("Completed"),
+        CANCELLED("Cancelled"),
+        EXPIRED("Expired");
+
+        private final String displayName;
+
+        PrescriptionStatus(String displayName) {
+            this.displayName = displayName;
+        }
+
     }
 }

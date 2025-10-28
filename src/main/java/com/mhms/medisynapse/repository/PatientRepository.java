@@ -47,4 +47,43 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             "WHERE p.id = :patientId AND ph.hospital.id = :hospitalId AND p.isActive = true")
     Patient findPatientByIdAndHospitalId(@Param("patientId") Long patientId,
                                          @Param("hospitalId") Long hospitalId);
+
+    // Doctor-specific patient queries
+    @Query("SELECT DISTINCT p FROM Patient p " +
+            "LEFT JOIN FETCH p.address " +
+            "WHERE p.id IN (" +
+            "   SELECT DISTINCT a.patient.id FROM Appointment a " +
+            "   WHERE a.doctor.id = :doctorId AND a.isActive = true" +
+            ") " +
+            "AND p.isActive = true " +
+            "AND (:status IS NULL OR p.status = :status) " +
+            "AND (:search IS NULL OR :search = '' OR " +
+            "     LOWER(CONCAT(p.firstName, ' ', p.lastName)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "     LOWER(p.contact) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "     LOWER(p.email) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Patient> findPatientsByDoctor(
+            @Param("doctorId") Long doctorId,
+            @Param("status") Patient.PatientStatus status,
+            @Param("search") String search,
+            Pageable pageable);
+
+    @Query("SELECT DISTINCT p FROM Patient p " +
+            "LEFT JOIN FETCH p.address " +
+            "WHERE p.id IN (" +
+            "   SELECT DISTINCT a.patient.id FROM Appointment a " +
+            "   WHERE a.doctor.id = :doctorId " +
+            "   AND a.isActive = true " +
+            "   ORDER BY a.lastUpdatedDt DESC" +
+            ") " +
+            "AND p.isActive = true " +
+            "ORDER BY p.lastUpdatedDt DESC")
+    List<Patient> findRecentPatientsByDoctor(@Param("doctorId") Long doctorId, Pageable pageable);
+
+    @Query("SELECT COUNT(DISTINCT p.id) FROM Patient p " +
+            "WHERE p.id IN (" +
+            "   SELECT DISTINCT a.patient.id FROM Appointment a " +
+            "   WHERE a.doctor.id = :doctorId AND a.isActive = true" +
+            ") " +
+            "AND p.isActive = true")
+    Long countPatientsByDoctor(@Param("doctorId") Long doctorId);
 }

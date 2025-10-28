@@ -48,6 +48,9 @@ public class Admission {
     @JoinColumn(name = "fk_attending_doctor_id", nullable = false, referencedColumnName = "id")
     private User admittingDoctor;
 
+    @Column(name = "admission_date", nullable = false)
+    private LocalDateTime admissionDate;
+
     @Column(name = "discharge_date")
     private LocalDateTime dischargeDt;
 

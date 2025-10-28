@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AdmissionRepository extends JpaRepository<Admission, Long> {
@@ -66,4 +67,12 @@ public interface AdmissionRepository extends JpaRepository<Admission, Long> {
     List<Admission> findCurrentAdmissionsByHospitalAndDepartmentId(
             @Param("hospitalId") Long hospitalId,
             @Param("departmentId") Long departmentId);
+
+    @Query("SELECT a FROM Admission a " +
+            "WHERE a.patient.id = :patientId " +
+            "AND a.status = 'ADMITTED' " +
+            "AND a.dischargeDt IS NULL " +
+            "AND a.isActive = true " +
+            "ORDER BY a.createdDt DESC")
+    Optional<Admission> findCurrentAdmissionByPatientId(@Param("patientId") Long patientId);
 }
