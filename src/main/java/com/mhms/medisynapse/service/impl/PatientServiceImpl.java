@@ -14,6 +14,7 @@ import com.mhms.medisynapse.entity.Hospital;
 import com.mhms.medisynapse.entity.Patient;
 import com.mhms.medisynapse.entity.PatientHospital;
 import com.mhms.medisynapse.entity.PatientHospital.PatientHospitalStatus;
+import com.mhms.medisynapse.entity.Prescription;
 import com.mhms.medisynapse.repository.AddressRepository;
 import com.mhms.medisynapse.repository.AdmissionRepository;
 import com.mhms.medisynapse.repository.AppointmentRepository;
@@ -21,6 +22,7 @@ import com.mhms.medisynapse.repository.EhrRepository;
 import com.mhms.medisynapse.repository.HospitalRepository;
 import com.mhms.medisynapse.repository.PatientHospitalRepository;
 import com.mhms.medisynapse.repository.PatientRepository;
+import com.mhms.medisynapse.repository.PrescriptionRepository;
 import com.mhms.medisynapse.service.PatientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +49,7 @@ public class PatientServiceImpl implements PatientService {
     private final AddressRepository addressRepository;
     private final PatientHospitalRepository patientHospitalRepository;
     private final EhrRepository ehrRepository;
+    private final PrescriptionRepository prescriptionRepository;
 
     @Override
     public PatientPagedResponseDto getPatientsByHospitalId(Long hospitalId,
@@ -92,8 +95,8 @@ public class PatientServiceImpl implements PatientService {
             patientHospitals.addAll(patient.getPatientHospitals());
         }
         Long hospitalId = null;
-        if (!patientHospitals.isEmpty() && patientHospitals.get(0).getHospital() != null) {
-            hospitalId = patientHospitals.get(0).getHospital().getId();
+        if (!patientHospitals.isEmpty() && patientHospitals.getFirst().getHospital() != null) {
+            hospitalId = patientHospitals.getFirst().getHospital().getId();
         }
         java.util.List<com.mhms.medisynapse.entity.Admission> admissions = new java.util.ArrayList<>();
         if (hospitalId != null) {
@@ -152,18 +155,6 @@ public class PatientServiceImpl implements PatientService {
             return text;
         }
         return text.substring(0, 1).toUpperCase() + text.substring(1).toLowerCase();
-    }
-
-    private String generateMockEmail(String firstName, String lastName) {
-        if (firstName != null && lastName != null) {
-            return firstName.toLowerCase() + "." + lastName.toLowerCase() + "@email.com";
-        }
-        return null;
-    }
-
-    private String generateMockBloodGroup() {
-        String[] bloodGroups = {"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"};
-        return bloodGroups[(int) (Math.random() * bloodGroups.length)];
     }
 
     @Override
@@ -607,13 +598,82 @@ public class PatientServiceImpl implements PatientService {
             return edto;
         }).toList());
 
-        // TODO: Map prescriptions, labResults, attachments, insurances, billings, hospitals
-        dto.setPrescriptions(java.util.Collections.emptyList());
+        // Map prescriptions
+        List<Prescription> prescriptions = prescriptionRepository.findByPatientAndHospital(patientId, null);
+        dto.setPrescriptions(prescriptions.stream().map(p -> {
+            PatientHistoryResponseDTO.PrescriptionDTO pdto = new PatientHistoryResponseDTO.PrescriptionDTO();
+            pdto.setId(p.getId());
+            pdto.setStatus(p.getStatus() != null ? p.getStatus().toString() : null);
+            pdto.setCreatedDt(p.getCreatedDt());
+            if (p.getDoctor() != null) {
+                PatientHistoryResponseDTO.DoctorDTO d = new PatientHistoryResponseDTO.DoctorDTO();
+                d.setId(p.getDoctor().getId());
+                d.setName(p.getDoctor().getName());
+                pdto.setDoctor(d);
+            }
+            if (p.getHospital() != null) {
+                PatientHistoryResponseDTO.HospitalDTO h = new PatientHistoryResponseDTO.HospitalDTO();
+                h.setId(p.getHospital().getId());
+                h.setName(p.getHospital().getName());
+                pdto.setHospital(h);
+            }
+            return pdto;
+        }).toList());
+
+        // Map attachments from all EHRs (fix: map from entity Attachment, not AttachmentDTO)
+        List<PatientHistoryResponseDTO.AttachmentDTO> attachments = dto.getEhrs().stream()
+            .flatMap(ehr -> {
+                if (ehr.getId() == null) return java.util.stream.Stream.empty();
+                // Find the EHR entity by id to get attachments
+                com.mhms.medisynapse.entity.Ehr ehrEntity = ehrRepository.findById(ehr.getId()).orElse(null);
+                if (ehrEntity == null || ehrEntity.getAttachments() == null) return java.util.stream.Stream.empty();
+                return ehrEntity.getAttachments().stream();
+            })
+            .map(a -> {
+                PatientHistoryResponseDTO.AttachmentDTO adto = new PatientHistoryResponseDTO.AttachmentDTO();
+                adto.setId(a.getId());
+                adto.setType(a.getType() != null ? a.getType().toString() : null);
+                adto.setUrl(a.getFilePath());
+                adto.setDate(a.getCreatedDt());
+                adto.setDescription(null); // No description field in entity
+                return adto;
+            }).toList();
+        dto.setAttachments(attachments);
+
+        // Map insurances
+        dto.setInsurances(patient.getPatientInsurances() != null ? patient.getPatientInsurances().stream().map(pi -> {
+            PatientHistoryResponseDTO.InsuranceDTO idto = new PatientHistoryResponseDTO.InsuranceDTO();
+            idto.setId(pi.getInsurance().getId());
+            idto.setProvider(pi.getInsurance().getProvider());
+            idto.setPolicyNumber(pi.getInsurance().getPolicyNumber());
+            idto.setStatus(null); // No status field in entity
+            idto.setStartDate(pi.getInsurance().getValidFrom());
+            idto.setEndDate(pi.getInsurance().getValidTo());
+            return idto;
+        }).toList() : java.util.Collections.emptyList());
+
+        // Map billings
+        dto.setBillings(patient.getBillings() != null ? patient.getBillings().stream().map(b -> {
+            PatientHistoryResponseDTO.BillingDTO bdto = new PatientHistoryResponseDTO.BillingDTO();
+            bdto.setId(b.getId());
+            bdto.setType(b.getPaymentMethod() != null ? b.getPaymentMethod().toString() : null);
+            bdto.setAmount(b.getTotalAmount() != null ? b.getTotalAmount().doubleValue() : null);
+            bdto.setStatus(b.getStatus() != null ? b.getStatus().toString() : null);
+            bdto.setDate(b.getCreatedDt());
+            return bdto;
+        }).toList() : java.util.Collections.emptyList());
+
+        // Map hospitals
+        dto.setHospitals(patient.getPatientHospitals() != null ? patient.getPatientHospitals().stream().map(ph -> {
+            PatientHistoryResponseDTO.HospitalDTO hdto = new PatientHistoryResponseDTO.HospitalDTO();
+            hdto.setId(ph.getHospital().getId());
+            hdto.setName(ph.getHospital().getName());
+            hdto.setAddress(null); // No address mapping for now
+            return hdto;
+        }).toList() : java.util.Collections.emptyList());
+
+        // LabResults: Not directly available, set as empty for now
         dto.setLabResults(java.util.Collections.emptyList());
-        dto.setAttachments(java.util.Collections.emptyList());
-        dto.setInsurances(java.util.Collections.emptyList());
-        dto.setBillings(java.util.Collections.emptyList());
-        dto.setHospitals(java.util.Collections.emptyList());
 
         dto.setAppointments(dto.getAppointments() != null ? dto.getAppointments() : java.util.Collections.emptyList());
         dto.setAdmissions(dto.getAdmissions() != null ? dto.getAdmissions() : java.util.Collections.emptyList());

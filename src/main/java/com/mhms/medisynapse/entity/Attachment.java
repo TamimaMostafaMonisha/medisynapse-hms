@@ -14,37 +14,43 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "attachment")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = true)
 public class Attachment {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_ehr_id", nullable = false, referencedColumnName = "id")
+    @ToString.Exclude
     private Ehr ehr;
 
     @Column(name = "file_path", nullable = false)
     private String filePath;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type")
+    @Column(name = "attachment_type")
     private AttachmentType type;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_uploaded_by", nullable = false, referencedColumnName = "id")
+    @JoinColumn(name = "uploaded_by_id", nullable = false, referencedColumnName = "id")
+    @ToString.Exclude
     private User uploadedBy;
 
     @Column(name = "created_dt", nullable = false, updatable = false)
