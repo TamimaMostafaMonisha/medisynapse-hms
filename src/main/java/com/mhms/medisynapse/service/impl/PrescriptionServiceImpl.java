@@ -242,6 +242,13 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                 request.getMedications() != null ? request.getMedications().size() : 0,
                 request.getLabTestOrders() != null ? request.getLabTestOrders().size() : 0);
 
+        // Validation: At least one of medications or labTestOrders must be present
+        boolean hasMeds = request.getMedications() != null && !request.getMedications().isEmpty();
+        boolean hasLabs = request.getLabTestOrders() != null && !request.getLabTestOrders().isEmpty();
+        if (!hasMeds && !hasLabs) {
+            throw new IllegalArgumentException("At least one of medications or labTestOrders must be provided.");
+        }
+
         // Validate appointment
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + appointmentId));
@@ -257,8 +264,8 @@ public class PrescriptionServiceImpl implements PrescriptionService {
         List<Long> prescriptionIds = new ArrayList<>();
         List<Long> labOrderIds = new ArrayList<>();
 
-        // Create prescriptions for each medication
-        if (request.getMedications() != null && !request.getMedications().isEmpty()) {
+        // If medications are present, create a prescription for each medication
+        if (hasMeds) {
             for (PrescriptionWithTestsRequest.MedicationDto med : request.getMedications()) {
                 Prescription prescription = new Prescription();
                 prescription.setPatient(patient);
@@ -286,8 +293,33 @@ public class PrescriptionServiceImpl implements PrescriptionService {
             log.info("Created {} prescriptions", prescriptionIds.size());
         }
 
+        // If no medications but labTestOrders exist, create a single prescription for the lab orders
+        if (!hasMeds && hasLabs) {
+            Prescription prescription = new Prescription();
+            prescription.setPatient(patient);
+            prescription.setDoctor(doctor);
+            prescription.setHospital(appointment.getHospital());
+            prescription.setAppointment(appointment);
+            // Set medication_name to empty string to satisfy NOT NULL constraint
+            prescription.setMedicationName("");
+            prescription.setInstructions(request.getInstructions());
+            prescription.setNotes(request.getNotes());
+            prescription.setPrescriptionDate(LocalDate.now());
+            prescription.setPrescriptionType(Prescription.PrescriptionType.valueOf(request.getPrescriptionType()));
+            prescription.setClinicalDiagnosis(request.getClinicalDiagnosis());
+            prescription.setFollowUpRequired(request.getFollowUpRequired());
+            prescription.setFollowUpDate(request.getFollowUpDate());
+            prescription.setStatus(Prescription.PrescriptionStatus.ACTIVE);
+            prescription.setCreatedBy(request.getDoctorId());
+            prescription.setIsActive(true);
+
+            Prescription saved = prescriptionRepository.save(prescription);
+            prescriptionIds.add(saved.getId());
+            log.info("Created 1 prescription for lab orders only");
+        }
+
         // Create lab test orders
-        if (request.getLabTestOrders() != null && !request.getLabTestOrders().isEmpty()) {
+        if (hasLabs) {
             List<LabTestOrderResponse> labOrders = labTestOrderService.createLabTestOrders(
                     appointmentId,
                     request.getLabTestOrders()
@@ -297,7 +329,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                     .collect(Collectors.toList());
             log.info("Created {} lab test orders", labOrderIds.size());
 
-            // Link lab orders to first prescription if medications exist
+            // Link lab orders to first prescription if any prescription exists
             if (!prescriptionIds.isEmpty()) {
                 Long firstPrescriptionId = prescriptionIds.get(0);
                 Prescription firstPrescription = prescriptionRepository.findById(firstPrescriptionId)
