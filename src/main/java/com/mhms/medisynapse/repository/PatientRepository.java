@@ -107,5 +107,8 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
 
     // 3. All patients (global list, optionally filter by isActive)
     Page<Patient> findAllByIsActiveTrue(Pageable pageable);
+
     Page<Patient> findAll(Pageable pageable);
+
+    java.util.Optional<Patient> findByNationalId(String nationalId);
 }

@@ -49,5 +49,7 @@ public class CreatePatientRequestDto {
 
     // Optional fields that can be provided instead of age
     private LocalDate dateOfBirth;
+
+    @NotBlank(message = "National ID is required")
     private String nationalId;
 }

@@ -20,4 +20,5 @@ public class CreatePatientResponseDto {
     private String bloodGroup;
     private String status;
     private EmergencyContactDto emergencyContact;
+    private String nationalId;
 }

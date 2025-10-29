@@ -162,6 +162,11 @@ public class PatientServiceImpl implements PatientService {
     public CreatePatientResponseDto createPatient(CreatePatientRequestDto request) {
         log.info("Creating new patient: {}", request.getName());
 
+        // Check for existing patient by nationalId
+        if (patientRepository.findByNationalId(request.getNationalId()).isPresent()) {
+            throw new RuntimeException("Patient with this nationalId is already registered");
+        }
+
         // Validate hospital exists
         Hospital hospital = hospitalRepository.findById(request.getHospitalId())
                 .orElseThrow(() -> new RuntimeException("Hospital not found with ID: " + request.getHospitalId()));
@@ -251,6 +256,7 @@ public class PatientServiceImpl implements PatientService {
                 .bloodGroup(request.getBloodGroup())
                 .status("Active")
                 .emergencyContact(request.getEmergencyContact())
+                .nationalId(savedPatient.getNationalId())
                 .build();
 
         log.info("Successfully created patient with ID: {}", savedPatient.getId());
