@@ -300,76 +300,76 @@ CREATE TABLE IF NOT EXISTS lab_test_master
     version                  INT      DEFAULT 1
 );
 
--- Step 7: Create indexes for lab_test_master
--- ============================================================================
-CREATE INDEX idx_lab_test_master_active ON lab_test_master (is_active);
-CREATE INDEX idx_lab_test_master_type ON lab_test_master (test_type);
-CREATE INDEX idx_lab_test_master_category ON lab_test_master (category);
-
--- Step 8: Insert sample lab test data
--- ============================================================================
-INSERT INTO lab_test_master (test_name, test_code, test_type, category, description, typical_turnaround_hours,
-                             requires_fasting, sample_type)
-VALUES ('Complete Blood Count (CBC)', 'CBC', 'BLOOD_TEST', 'Hematology',
-        'Measures different components of blood including RBC, WBC, Hemoglobin, Hematocrit, and Platelets', 2, FALSE,
-        'Whole Blood'),
-       ('Blood Glucose (Fasting)', 'FBS', 'BLOOD_TEST', 'Biochemistry',
-        'Measures blood sugar level after overnight fasting', 1, TRUE, 'Serum'),
-       ('Blood Glucose (Random)', 'RBS', 'BLOOD_TEST', 'Biochemistry', 'Measures blood sugar level at any time', 1,
-        FALSE, 'Serum'),
-       ('Lipid Profile', 'LIPID', 'BLOOD_TEST', 'Biochemistry',
-        'Measures cholesterol (Total, HDL, LDL) and triglycerides', 4, TRUE, 'Serum'),
-       ('Liver Function Test (LFT)', 'LFT', 'BLOOD_TEST', 'Biochemistry',
-        'Evaluates liver health including ALT, AST, ALP, Bilirubin, and Albumin', 4, FALSE, 'Serum'),
-       ('Kidney Function Test (KFT)', 'KFT', 'BLOOD_TEST', 'Biochemistry',
-        'Evaluates kidney function including Creatinine, Urea, and Uric Acid', 4, FALSE, 'Serum'),
-       ('Thyroid Function Test', 'TFT', 'BLOOD_TEST', 'Endocrinology', 'Measures thyroid hormones (TSH, T3, T4)', 24,
-        FALSE, 'Serum'),
-       ('HbA1c', 'HBA1C', 'BLOOD_TEST', 'Biochemistry',
-        'Glycated hemoglobin - measures average blood sugar over 3 months', 4, FALSE, 'Whole Blood'),
-       ('Urine Routine Examination', 'URE', 'URINE_TEST', 'Urinalysis',
-        'Analyzes urine composition including color, pH, protein, glucose, and microscopy', 1, FALSE, 'Urine'),
-       ('Urine Culture', 'UC', 'URINE_TEST', 'Microbiology', 'Identifies bacteria causing urinary tract infection', 48,
-        FALSE, 'Urine'),
-       ('Chest X-Ray', 'CXR', 'IMAGING', 'Radiology', 'X-ray image of chest to evaluate lungs, heart, and chest wall',
-        1, FALSE, 'N/A'),
-       ('Chest X-Ray (PA & Lateral)', 'CXR-PA-LAT', 'IMAGING', 'Radiology',
-        'Chest X-ray with posterior-anterior and lateral views', 1, FALSE, 'N/A'),
-       ('ECG', 'ECG', 'OTHER', 'Cardiology', 'Electrocardiogram - records electrical activity of the heart', 0, FALSE,
-        'N/A'),
-       ('Ultrasound Abdomen', 'USG-ABD', 'IMAGING', 'Radiology',
-        'Ultrasound of abdominal organs (liver, gallbladder, pancreas, spleen, kidneys)', 1, TRUE, 'N/A'),
-       ('Ultrasound Pelvis', 'USG-PELV', 'IMAGING', 'Radiology', 'Ultrasound of pelvic organs', 1, TRUE, 'N/A'),
-       ('CT Scan Head', 'CT-HEAD', 'IMAGING', 'Radiology', 'Computed Tomography scan of head and brain', 2, FALSE,
-        'N/A'),
-       ('MRI Brain', 'MRI-BRAIN', 'IMAGING', 'Radiology', 'Magnetic Resonance Imaging of brain', 24, FALSE, 'N/A'),
-       ('Blood Group & Rh', 'BG-RH', 'BLOOD_TEST', 'Hematology', 'Determines ABO blood group and Rh factor', 1, FALSE,
-        'Whole Blood'),
-       ('ESR', 'ESR', 'BLOOD_TEST', 'Hematology', 'Erythrocyte Sedimentation Rate - measures inflammation', 1, FALSE,
-        'Whole Blood'),
-       ('Prothrombin Time (PT)', 'PT', 'BLOOD_TEST', 'Hematology', 'Measures blood clotting time', 2, FALSE, 'Plasma'),
-       ('APTT', 'APTT', 'BLOOD_TEST', 'Hematology', 'Activated Partial Thromboplasin Time - measures blood clotting', 2,
-        FALSE, 'Plasma'),
-       ('Vitamin D', 'VIT-D', 'BLOOD_TEST', 'Biochemistry', 'Measures Vitamin D (25-OH) level', 24, FALSE, 'Serum'),
-       ('Vitamin B12', 'VIT-B12', 'BLOOD_TEST', 'Biochemistry', 'Measures Vitamin B12 level', 24, FALSE, 'Serum'),
-       ('Serum Electrolytes', 'ELECTRO', 'BLOOD_TEST', 'Biochemistry', 'Measures Sodium, Potassium, Chloride levels', 2,
-        FALSE, 'Serum'),
-       ('HIV Test', 'HIV', 'BLOOD_TEST', 'Serology', 'Screening test for HIV antibodies', 24, FALSE, 'Serum'),
-       ('Hepatitis B Surface Antigen', 'HBSAG', 'BLOOD_TEST', 'Serology', 'Screening test for Hepatitis B infection',
-        24, FALSE, 'Serum'),
-       ('Hepatitis C Antibody', 'HCV', 'BLOOD_TEST', 'Serology', 'Screening test for Hepatitis C infection', 24, FALSE,
-        'Serum'),
-       ('Widal Test', 'WIDAL', 'BLOOD_TEST', 'Serology', 'Test for typhoid fever', 4, FALSE, 'Serum'),
-       ('Dengue NS1 Antigen', 'DENGUE-NS1', 'BLOOD_TEST', 'Serology', 'Early detection of Dengue virus', 2, FALSE,
-        'Serum'),
-       ('Dengue IgM/IgG', 'DENGUE-AB', 'BLOOD_TEST', 'Serology', 'Dengue antibodies test', 4, FALSE, 'Serum'),
-       ('Stool Routine', 'STOOL-RE', 'OTHER', 'Microbiology', 'Microscopic examination of stool', 1, FALSE, 'Stool'),
-       ('Stool Culture', 'STOOL-C', 'OTHER', 'Microbiology', 'Identifies bacteria in stool', 48, FALSE, 'Stool'),
-       ('Sputum Culture', 'SPUTUM-C', 'OTHER', 'Microbiology', 'Identifies bacteria in sputum', 48, FALSE, 'Sputum'),
-       ('Pap Smear', 'PAP', 'BIOPSY', 'Pathology', 'Cervical cancer screening test', 72, FALSE, 'Cervical Cells'),
-       ('Biopsy - General', 'BIOPSY', 'BIOPSY', 'Pathology', 'Microscopic examination of tissue sample', 120, FALSE,
-        'Tissue')
-ON DUPLICATE KEY UPDATE test_name = VALUES(test_name);
+# -- Step 7: Create indexes for lab_test_master
+# -- ============================================================================
+# CREATE INDEX idx_lab_test_master_active ON lab_test_master (is_active);
+# CREATE INDEX idx_lab_test_master_type ON lab_test_master (test_type);
+# CREATE INDEX idx_lab_test_master_category ON lab_test_master (category);
+#
+# -- Step 8: Insert sample lab test data
+# -- ============================================================================
+# INSERT INTO lab_test_master (test_name, test_code, test_type, category, description, typical_turnaround_hours,
+#                              requires_fasting, sample_type)
+# VALUES ('Complete Blood Count (CBC)', 'CBC', 'BLOOD_TEST', 'Hematology',
+#         'Measures different components of blood including RBC, WBC, Hemoglobin, Hematocrit, and Platelets', 2, FALSE,
+#         'Whole Blood'),
+#        ('Blood Glucose (Fasting)', 'FBS', 'BLOOD_TEST', 'Biochemistry',
+#         'Measures blood sugar level after overnight fasting', 1, TRUE, 'Serum'),
+#        ('Blood Glucose (Random)', 'RBS', 'BLOOD_TEST', 'Biochemistry', 'Measures blood sugar level at any time', 1,
+#         FALSE, 'Serum'),
+#        ('Lipid Profile', 'LIPID', 'BLOOD_TEST', 'Biochemistry',
+#         'Measures cholesterol (Total, HDL, LDL) and triglycerides', 4, TRUE, 'Serum'),
+#        ('Liver Function Test (LFT)', 'LFT', 'BLOOD_TEST', 'Biochemistry',
+#         'Evaluates liver health including ALT, AST, ALP, Bilirubin, and Albumin', 4, FALSE, 'Serum'),
+#        ('Kidney Function Test (KFT)', 'KFT', 'BLOOD_TEST', 'Biochemistry',
+#         'Evaluates kidney function including Creatinine, Urea, and Uric Acid', 4, FALSE, 'Serum'),
+#        ('Thyroid Function Test', 'TFT', 'BLOOD_TEST', 'Endocrinology', 'Measures thyroid hormones (TSH, T3, T4)', 24,
+#         FALSE, 'Serum'),
+#        ('HbA1c', 'HBA1C', 'BLOOD_TEST', 'Biochemistry',
+#         'Glycated hemoglobin - measures average blood sugar over 3 months', 4, FALSE, 'Whole Blood'),
+#        ('Urine Routine Examination', 'URE', 'URINE_TEST', 'Urinalysis',
+#         'Analyzes urine composition including color, pH, protein, glucose, and microscopy', 1, FALSE, 'Urine'),
+#        ('Urine Culture', 'UC', 'URINE_TEST', 'Microbiology', 'Identifies bacteria causing urinary tract infection', 48,
+#         FALSE, 'Urine'),
+#        ('Chest X-Ray', 'CXR', 'IMAGING', 'Radiology', 'X-ray image of chest to evaluate lungs, heart, and chest wall',
+#         1, FALSE, 'N/A'),
+#        ('Chest X-Ray (PA & Lateral)', 'CXR-PA-LAT', 'IMAGING', 'Radiology',
+#         'Chest X-ray with posterior-anterior and lateral views', 1, FALSE, 'N/A'),
+#        ('ECG', 'ECG', 'OTHER', 'Cardiology', 'Electrocardiogram - records electrical activity of the heart', 0, FALSE,
+#         'N/A'),
+#        ('Ultrasound Abdomen', 'USG-ABD', 'IMAGING', 'Radiology',
+#         'Ultrasound of abdominal organs (liver, gallbladder, pancreas, spleen, kidneys)', 1, TRUE, 'N/A'),
+#        ('Ultrasound Pelvis', 'USG-PELV', 'IMAGING', 'Radiology', 'Ultrasound of pelvic organs', 1, TRUE, 'N/A'),
+#        ('CT Scan Head', 'CT-HEAD', 'IMAGING', 'Radiology', 'Computed Tomography scan of head and brain', 2, FALSE,
+#         'N/A'),
+#        ('MRI Brain', 'MRI-BRAIN', 'IMAGING', 'Radiology', 'Magnetic Resonance Imaging of brain', 24, FALSE, 'N/A'),
+#        ('Blood Group & Rh', 'BG-RH', 'BLOOD_TEST', 'Hematology', 'Determines ABO blood group and Rh factor', 1, FALSE,
+#         'Whole Blood'),
+#        ('ESR', 'ESR', 'BLOOD_TEST', 'Hematology', 'Erythrocyte Sedimentation Rate - measures inflammation', 1, FALSE,
+#         'Whole Blood'),
+#        ('Prothrombin Time (PT)', 'PT', 'BLOOD_TEST', 'Hematology', 'Measures blood clotting time', 2, FALSE, 'Plasma'),
+#        ('APTT', 'APTT', 'BLOOD_TEST', 'Hematology', 'Activated Partial Thromboplasin Time - measures blood clotting', 2,
+#         FALSE, 'Plasma'),
+#        ('Vitamin D', 'VIT-D', 'BLOOD_TEST', 'Biochemistry', 'Measures Vitamin D (25-OH) level', 24, FALSE, 'Serum'),
+#        ('Vitamin B12', 'VIT-B12', 'BLOOD_TEST', 'Biochemistry', 'Measures Vitamin B12 level', 24, FALSE, 'Serum'),
+#        ('Serum Electrolytes', 'ELECTRO', 'BLOOD_TEST', 'Biochemistry', 'Measures Sodium, Potassium, Chloride levels', 2,
+#         FALSE, 'Serum'),
+#        ('HIV Test', 'HIV', 'BLOOD_TEST', 'Serology', 'Screening test for HIV antibodies', 24, FALSE, 'Serum'),
+#        ('Hepatitis B Surface Antigen', 'HBSAG', 'BLOOD_TEST', 'Serology', 'Screening test for Hepatitis B infection',
+#         24, FALSE, 'Serum'),
+#        ('Hepatitis C Antibody', 'HCV', 'BLOOD_TEST', 'Serology', 'Screening test for Hepatitis C infection', 24, FALSE,
+#         'Serum'),
+#        ('Widal Test', 'WIDAL', 'BLOOD_TEST', 'Serology', 'Test for typhoid fever', 4, FALSE, 'Serum'),
+#        ('Dengue NS1 Antigen', 'DENGUE-NS1', 'BLOOD_TEST', 'Serology', 'Early detection of Dengue virus', 2, FALSE,
+#         'Serum'),
+#        ('Dengue IgM/IgG', 'DENGUE-AB', 'BLOOD_TEST', 'Serology', 'Dengue antibodies test', 4, FALSE, 'Serum'),
+#        ('Stool Routine', 'STOOL-RE', 'OTHER', 'Microbiology', 'Microscopic examination of stool', 1, FALSE, 'Stool'),
+#        ('Stool Culture', 'STOOL-C', 'OTHER', 'Microbiology', 'Identifies bacteria in stool', 48, FALSE, 'Stool'),
+#        ('Sputum Culture', 'SPUTUM-C', 'OTHER', 'Microbiology', 'Identifies bacteria in sputum', 48, FALSE, 'Sputum'),
+#        ('Pap Smear', 'PAP', 'BIOPSY', 'Pathology', 'Cervical cancer screening test', 72, FALSE, 'Cervical Cells'),
+#        ('Biopsy - General', 'BIOPSY', 'BIOPSY', 'Pathology', 'Microscopic examination of tissue sample', 120, FALSE,
+#         'Tissue')
+# ON DUPLICATE KEY UPDATE test_name = VALUES(test_name);
 
 -- ============================================================================
 -- Migration Complete
