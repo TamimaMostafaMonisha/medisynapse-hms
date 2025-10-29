@@ -145,15 +145,19 @@ public class AppointmentService {
         Sort sort = Sort.by(Sort.Direction.fromString(filter.getSortDirection()), filter.getSortBy());
         Pageable pageable = PageRequest.of(filter.getPage(), filter.getSize(), sort);
 
+        // Convert LocalDate to LocalDateTime for repository
+        LocalDateTime startDateTime = filter.getStartDate() != null ? filter.getStartDate().atStartOfDay() : null;
+        LocalDateTime endDateTime = filter.getEndDate() != null ? filter.getEndDate().atTime(java.time.LocalTime.MAX) : null;
+
         Page<Appointment> appointments = appointmentRepository.findAppointmentsWithFilters(
                 filter.getHospitalId(),
                 filter.getDoctorId(),
                 filter.getPatientId(),
                 filter.getDepartmentId(),
-                filter.getStatus(),
                 filter.getAppointmentType(),
-                filter.getStartDate(),
-                filter.getEndDate(),
+                startDateTime,
+                endDateTime,
+                filter.getStatus(), // now a List<AppointmentStatus>
                 pageable
         );
 

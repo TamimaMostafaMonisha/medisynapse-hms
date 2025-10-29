@@ -3,23 +3,24 @@ package com.mhms.medisynapse.service.impl;
 import com.mhms.medisynapse.dto.AddressDto;
 import com.mhms.medisynapse.dto.CreatePatientRequestDto;
 import com.mhms.medisynapse.dto.CreatePatientResponseDto;
-import com.mhms.medisynapse.dto.EmergencyContactDto;
 import com.mhms.medisynapse.dto.PaginationDto;
+import com.mhms.medisynapse.dto.PatientHistoryResponseDTO;
 import com.mhms.medisynapse.dto.PatientListDto;
 import com.mhms.medisynapse.dto.PatientPagedResponseDto;
 import com.mhms.medisynapse.dto.UpdatePatientRequestDto;
 import com.mhms.medisynapse.dto.UpdatePatientResponseDto;
 import com.mhms.medisynapse.entity.Address;
-import com.mhms.medisynapse.entity.Admission;
 import com.mhms.medisynapse.entity.Hospital;
 import com.mhms.medisynapse.entity.Patient;
 import com.mhms.medisynapse.entity.PatientHospital;
+import com.mhms.medisynapse.entity.PatientHospital.PatientHospitalStatus;
+import com.mhms.medisynapse.repository.AddressRepository;
 import com.mhms.medisynapse.repository.AdmissionRepository;
 import com.mhms.medisynapse.repository.AppointmentRepository;
+import com.mhms.medisynapse.repository.EhrRepository;
 import com.mhms.medisynapse.repository.HospitalRepository;
-import com.mhms.medisynapse.repository.PatientRepository;
-import com.mhms.medisynapse.repository.AddressRepository;
 import com.mhms.medisynapse.repository.PatientHospitalRepository;
+import com.mhms.medisynapse.repository.PatientRepository;
 import com.mhms.medisynapse.service.PatientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,6 +46,7 @@ public class PatientServiceImpl implements PatientService {
     private final AppointmentRepository appointmentRepository;
     private final AddressRepository addressRepository;
     private final PatientHospitalRepository patientHospitalRepository;
+    private final EhrRepository ehrRepository;
 
     @Override
     public PatientPagedResponseDto getPatientsByHospitalId(Long hospitalId,
@@ -75,21 +76,18 @@ public class PatientServiceImpl implements PatientService {
                 .build();
     }
 
-    private PatientListDto convertToPatientListDto(Patient patient) {
+    @Override
+    public PatientListDto convertToPatientListDto(Patient patient) {
         // Calculate age from date of birth
         Integer age = null;
         if (patient.getDob() != null) {
-            age = Period.between(patient.getDob(), LocalDate.now()).getYears();
+            age = java.time.Period.between(patient.getDob(), java.time.LocalDate.now()).getYears();
         }
-
-        // Get current admission information if patient is admitted
         String roomNumber = null;
         String admissionStatus = "Outpatient";
         Long assignedDoctorId = null;
         String assignedDoctorName = null;
-
-        // Defensive copy of patient hospitals to avoid ConcurrentModificationException
-        List<PatientHospital> patientHospitals = new ArrayList<>();
+        java.util.List<com.mhms.medisynapse.entity.PatientHospital> patientHospitals = new java.util.ArrayList<>();
         if (patient.getPatientHospitals() != null) {
             patientHospitals.addAll(patient.getPatientHospitals());
         }
@@ -97,16 +95,14 @@ public class PatientServiceImpl implements PatientService {
         if (!patientHospitals.isEmpty() && patientHospitals.get(0).getHospital() != null) {
             hospitalId = patientHospitals.get(0).getHospital().getId();
         }
-
-        List<Admission> admissions = new ArrayList<>();
+        java.util.List<com.mhms.medisynapse.entity.Admission> admissions = new java.util.ArrayList<>();
         if (hospitalId != null) {
             admissions.addAll(admissionRepository.findRecentAdmissionsByHospitalId(
-                hospitalId,
-                java.time.LocalDateTime.now().minusDays(30)
+                    hospitalId,
+                    java.time.LocalDateTime.now().minusDays(30)
             ));
         }
-
-        for (Admission admission : admissions) {
+        for (com.mhms.medisynapse.entity.Admission admission : admissions) {
             if (admission.getPatient() != null && admission.getPatient().getId().equals(patient.getId()) &&
                     "ADMITTED".equals(admission.getStatus().toString())) {
                 roomNumber = admission.getBedNo();
@@ -118,15 +114,11 @@ public class PatientServiceImpl implements PatientService {
                 break;
             }
         }
-
-        // Create emergency contact from actual patient data
-        EmergencyContactDto emergencyContact = EmergencyContactDto.builder()
+        com.mhms.medisynapse.dto.EmergencyContactDto emergencyContact = com.mhms.medisynapse.dto.EmergencyContactDto.builder()
                 .name(patient.getEmergencyContactName())
                 .relation(patient.getEmergencyContactRelation())
                 .phone(patient.getEmergencyContactPhone())
                 .build();
-
-        // Extract address as a string
         String addressString = null;
         if (patient.getAddress() != null) {
             addressString = patient.getAddress().getLine1();
@@ -137,16 +129,15 @@ public class PatientServiceImpl implements PatientService {
                 addressString += ", " + patient.getAddress().getCity();
             }
         }
-
-        return PatientListDto.builder()
+        return com.mhms.medisynapse.dto.PatientListDto.builder()
                 .id(patient.getId())
                 .name(patient.getFirstName() + " " + patient.getLastName())
                 .age(age)
                 .gender(capitalizeFirstLetter(patient.getGender().toString()))
                 .phone(patient.getContact())
-                .email(patient.getEmail()) // Use actual email from database
+                .email(patient.getEmail())
                 .address(addressString)
-                .bloodGroup(patient.getBloodGroup()) // Use actual blood group from database
+                .bloodGroup(patient.getBloodGroup())
                 .assignedDoctorId(assignedDoctorId)
                 .assignedDoctorName(assignedDoctorName)
                 .status(admissionStatus)
@@ -441,5 +432,193 @@ public class PatientServiceImpl implements PatientService {
                 .lastUpdatedDt(patient.getLastUpdatedDt())
                 .updatedBy(patient.getUpdatedBy())
                 .build();
+    }
+
+    @Override
+    public Page<Patient> getPatientsByHospitalAndStatus(Long hospitalId, PatientHospitalStatus status, Pageable pageable) {
+        return patientRepository.findPatientsByHospitalAndStatus(hospitalId, status, pageable);
+    }
+
+    @Override
+    public Page<Patient> getEligiblePatientsForHospital(Long hospitalId, Pageable pageable) {
+        return patientRepository.findEligiblePatientsForHospital(hospitalId, pageable);
+    }
+
+    @Override
+    public Page<Patient> getAllPatients(Boolean onlyActive, Pageable pageable) {
+        if (Boolean.TRUE.equals(onlyActive)) {
+            return patientRepository.findAllByIsActiveTrue(pageable);
+        } else {
+            return patientRepository.findAll(pageable);
+        }
+    }
+
+    @Override
+    public void assignPatientToHospital(Long patientId, Long hospitalId) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+        // Check global isActive
+        if (!Boolean.TRUE.equals(patient.getIsActive())) {
+            throw new RuntimeException("Patient is globally inactive and cannot be assigned");
+        }
+        // Find or create PatientHospital
+        PatientHospital ph = patientHospitalRepository.findByPatientIdAndHospitalId(patientId, hospitalId)
+                .orElseGet(() -> {
+                    PatientHospital newPh = new PatientHospital();
+                    newPh.setPatient(patient);
+                    newPh.setHospital(hospitalRepository.findById(hospitalId).orElseThrow(() -> new RuntimeException("Hospital not found")));
+                    newPh.setRegistrationDate(java.time.LocalDate.now());
+                    newPh.setIsActive(true);
+                    newPh.setStatus(PatientHospitalStatus.ACTIVE);
+                    return newPh;
+                });
+        // Reactivate if needed
+        ph.setIsActive(true);
+        ph.setStatus(PatientHospitalStatus.ACTIVE);
+        patientHospitalRepository.save(ph);
+    }
+
+    @Override
+    public PatientHistoryResponseDTO getPatientFullHistory(Long patientId) {
+        PatientHistoryResponseDTO dto = new PatientHistoryResponseDTO();
+
+        // Fetch patient
+        Patient patient = patientRepository.findById(patientId).orElse(null);
+        if (patient == null) {
+            return dto;
+        }
+
+        // Map patient info
+        PatientHistoryResponseDTO.PatientInfoDTO patientInfo = new PatientHistoryResponseDTO.PatientInfoDTO();
+        patientInfo.setId(patient.getId());
+        patientInfo.setFirstName(patient.getFirstName());
+        patientInfo.setLastName(patient.getLastName());
+        patientInfo.setDob(patient.getDob());
+        patientInfo.setGender(patient.getGender() != null ? patient.getGender().toString() : null);
+        patientInfo.setContact(patient.getContact());
+        patientInfo.setEmail(patient.getEmail());
+        patientInfo.setBloodGroup(patient.getBloodGroup());
+        patientInfo.setStatus(patient.getStatus() != null ? patient.getStatus().toString() : null);
+        patientInfo.setCreatedDt(patient.getCreatedDt());
+        patientInfo.setLastUpdatedDt(patient.getLastUpdatedDt());
+        // Address
+        if (patient.getAddress() != null) {
+            PatientHistoryResponseDTO.AddressDTO addressDTO = new PatientHistoryResponseDTO.AddressDTO();
+            addressDTO.setLine1(patient.getAddress().getLine1());
+            addressDTO.setLine2(patient.getAddress().getLine2());
+            addressDTO.setCity(patient.getAddress().getCity());
+            addressDTO.setState(patient.getAddress().getState());
+            addressDTO.setPostalCode(patient.getAddress().getPostalCode());
+            addressDTO.setCountry(patient.getAddress().getCountry());
+            addressDTO.setType(patient.getAddress().getType() != null ? patient.getAddress().getType().toString() : null);
+            patientInfo.setAddress(addressDTO);
+        }
+        // Emergency contacts
+        PatientHistoryResponseDTO.EmergencyContactDTO ec = new PatientHistoryResponseDTO.EmergencyContactDTO();
+        ec.setName(patient.getEmergencyContactName());
+        ec.setRelation(patient.getEmergencyContactRelation());
+        ec.setPhone(patient.getEmergencyContactPhone());
+        patientInfo.setEmergencyContacts(
+                (ec.getName() != null || ec.getPhone() != null) ? java.util.Collections.singletonList(ec) : java.util.Collections.emptyList()
+        );
+        dto.setPatientInfo(patientInfo);
+
+        // Appointments
+        dto.setAppointments(appointmentRepository.findAll().stream()
+                .filter(a -> a.getPatient() != null && a.getPatient().getId().equals(patientId))
+                .map(a -> {
+                    PatientHistoryResponseDTO.AppointmentDTO adto = new PatientHistoryResponseDTO.AppointmentDTO();
+                    adto.setId(a.getId());
+                    adto.setDateTime(a.getStartTime()); // Use startTime as the appointment date/time
+                    if (a.getDoctor() != null) {
+                        PatientHistoryResponseDTO.DoctorDTO d = new PatientHistoryResponseDTO.DoctorDTO();
+                        d.setId(a.getDoctor().getId());
+                        d.setName(a.getDoctor().getName());
+                        // Specialization not available in User entity; set as null or fetch from related entity if needed
+                        d.setSpecialization(null);
+                        adto.setDoctor(d);
+                    }
+                    if (a.getDepartment() != null) {
+                        PatientHistoryResponseDTO.DepartmentDTO dep = new PatientHistoryResponseDTO.DepartmentDTO();
+                        dep.setId(a.getDepartment().getId());
+                        dep.setName(a.getDepartment().getName());
+                        adto.setDepartment(dep);
+                    }
+                    adto.setStatus(a.getStatus() != null ? a.getStatus().toString() : null);
+                    adto.setType(a.getAppointmentType() != null ? a.getAppointmentType().toString() : null);
+                    adto.setReason(a.getReason());
+                    return adto;
+                }).toList());
+
+        // Admissions
+        dto.setAdmissions(admissionRepository.findAll().stream()
+                .filter(ad -> ad.getPatient() != null && ad.getPatient().getId().equals(patientId))
+                .map(ad -> {
+                    PatientHistoryResponseDTO.AdmissionDTO adto = new PatientHistoryResponseDTO.AdmissionDTO();
+                    adto.setId(ad.getId());
+                    adto.setAdmissionDate(ad.getAdmissionDate());
+                    adto.setDischargeDate(ad.getDischargeDt()); // Use correct field name
+                    if (ad.getHospital() != null) {
+                        PatientHistoryResponseDTO.HospitalDTO h = new PatientHistoryResponseDTO.HospitalDTO();
+                        h.setId(ad.getHospital().getId());
+                        h.setName(ad.getHospital().getName());
+                        adto.setHospital(h);
+                    }
+                    if (ad.getDepartment() != null) {
+                        PatientHistoryResponseDTO.DepartmentDTO dep = new PatientHistoryResponseDTO.DepartmentDTO();
+                        dep.setId(ad.getDepartment().getId());
+                        dep.setName(ad.getDepartment().getName());
+                        adto.setDepartment(dep);
+                    }
+                    if (ad.getAdmittingDoctor() != null) {
+                        PatientHistoryResponseDTO.DoctorDTO d = new PatientHistoryResponseDTO.DoctorDTO();
+                        d.setId(ad.getAdmittingDoctor().getId());
+                        d.setName(ad.getAdmittingDoctor().getName());
+                        d.setSpecialization(null); // Specialization not available
+                        adto.setAdmittingDoctor(d);
+                    }
+                    adto.setStatus(ad.getStatus() != null ? ad.getStatus().toString() : null);
+                    adto.setReason(ad.getNotes()); // Use notes as the reason for admission
+                    return adto;
+                }).toList());
+
+        // EHRs
+        dto.setEhrs(ehrRepository.findAllByPatientId(patientId).stream().map(e -> {
+            PatientHistoryResponseDTO.EhrDTO edto = new PatientHistoryResponseDTO.EhrDTO();
+            edto.setId(e.getId());
+            edto.setVisitDate(e.getVisitDate());
+            if (e.getDoctor() != null) {
+                PatientHistoryResponseDTO.DoctorDTO d = new PatientHistoryResponseDTO.DoctorDTO();
+                d.setId(e.getDoctor().getId());
+                d.setName(e.getDoctor().getName());
+                d.setSpecialization(null); // Specialization not available
+                edto.setDoctor(d);
+            }
+            if (e.getDepartment() != null) {
+                PatientHistoryResponseDTO.DepartmentDTO dep = new PatientHistoryResponseDTO.DepartmentDTO();
+                dep.setId(e.getDepartment().getId());
+                dep.setName(e.getDepartment().getName());
+                edto.setDepartment(dep);
+            }
+            edto.setDiagnosis(e.getDiagnosis());
+            edto.setCreatedDt(e.getCreatedDt());
+            edto.setLastUpdatedDt(e.getLastUpdatedDt());
+            // TODO: Map prescriptions and attachments if needed
+            return edto;
+        }).toList());
+
+        // TODO: Map prescriptions, labResults, attachments, insurances, billings, hospitals
+        dto.setPrescriptions(java.util.Collections.emptyList());
+        dto.setLabResults(java.util.Collections.emptyList());
+        dto.setAttachments(java.util.Collections.emptyList());
+        dto.setInsurances(java.util.Collections.emptyList());
+        dto.setBillings(java.util.Collections.emptyList());
+        dto.setHospitals(java.util.Collections.emptyList());
+
+        dto.setAppointments(dto.getAppointments() != null ? dto.getAppointments() : java.util.Collections.emptyList());
+        dto.setAdmissions(dto.getAdmissions() != null ? dto.getAdmissions() : java.util.Collections.emptyList());
+        dto.setEhrs(dto.getEhrs() != null ? dto.getEhrs() : java.util.Collections.emptyList());
+
+        return dto;
     }
 }

@@ -49,7 +49,7 @@ public class AppointmentController {
             @Parameter(description = "Doctor ID") @RequestParam(required = false) Long doctorId,
             @Parameter(description = "Patient ID") @RequestParam(required = false) Long patientId,
             @Parameter(description = "Department ID") @RequestParam(required = false) Long departmentId,
-            @Parameter(description = "Appointment Status") @RequestParam(required = false) Appointment.AppointmentStatus status,
+            @Parameter(description = "Appointment Status") @RequestParam(required = false) List<Appointment.AppointmentStatus> status,
             @Parameter(description = "Appointment Type") @RequestParam(required = false) Appointment.AppointmentType appointmentType,
             @Parameter(description = "Start Date (YYYY-MM-DD)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "End Date (YYYY-MM-DD)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,

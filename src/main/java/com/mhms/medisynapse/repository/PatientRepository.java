@@ -29,7 +29,7 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     @Query("SELECT p FROM Patient p " +
             "JOIN FETCH p.patientHospitals ph " +
             "LEFT JOIN FETCH p.address " +
-            "WHERE ph.hospital.id = :hospitalId " +
+            "WHERE (:hospitalId IS NULL OR ph.hospital.id = :hospitalId) " +
             "AND p.isActive = true " +
             "AND (:status IS NULL OR p.status = :status) " +
             "AND (:search IS NULL OR :search = '' OR " +
@@ -86,4 +86,26 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             ") " +
             "AND p.isActive = true")
     Long countPatientsByDoctor(@Param("doctorId") Long doctorId);
+
+    @Query("SELECT p FROM Patient p WHERE (:status IS NULL OR p.status = :status) AND " +
+            "(:search IS NULL OR " +
+            "     LOWER(CONCAT(p.firstName, ' ', p.lastName)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "     LOWER(p.contact) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "     LOWER(p.email) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Patient> findAllPatientsWithFilters(
+            @Param("status") Patient.PatientStatus status,
+            @Param("search") String search,
+            Pageable pageable);
+
+    // 1. Patients for a hospital, filtered by PatientHospital.status
+    @Query("SELECT p FROM Patient p JOIN p.patientHospitals ph WHERE ph.hospital.id = :hospitalId AND (:status IS NULL OR ph.status = :status) AND p.isActive = true AND ph.isActive = true")
+    Page<Patient> findPatientsByHospitalAndStatus(@Param("hospitalId") Long hospitalId, @Param("status") com.mhms.medisynapse.entity.PatientHospital.PatientHospitalStatus status, Pageable pageable);
+
+    // 2. Patients eligible for assignment to a hospital (not active in that hospital)
+    @Query("SELECT p FROM Patient p WHERE p.isActive = true AND NOT EXISTS (SELECT 1 FROM PatientHospital ph WHERE ph.patient = p AND ph.hospital.id = :hospitalId AND ph.status = 'ACTIVE' AND ph.isActive = true)")
+    Page<Patient> findEligiblePatientsForHospital(@Param("hospitalId") Long hospitalId, Pageable pageable);
+
+    // 3. All patients (global list, optionally filter by isActive)
+    Page<Patient> findAllByIsActiveTrue(Pageable pageable);
+    Page<Patient> findAll(Pageable pageable);
 }

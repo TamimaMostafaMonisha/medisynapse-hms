@@ -53,8 +53,8 @@ public class DoctorController {
     @Operation(summary = "Get doctor's patients",
                description = "Get paginated list of patients assigned to the doctor with optional filtering")
     public ResponseEntity<ApiResponse<DoctorPatientsResponseDto>> getPatients(
-            @Parameter(description = "Doctor ID", required = true)
-            @RequestParam Long doctorId,
+            @Parameter(description = "Doctor ID", required = false)
+            @RequestParam(required = false) Long doctorId,
 
             @Parameter(description = "Page number (0-indexed)")
             @RequestParam(defaultValue = "0") int page,
@@ -248,4 +248,3 @@ public class DoctorController {
                 .build());
     }
 }
-

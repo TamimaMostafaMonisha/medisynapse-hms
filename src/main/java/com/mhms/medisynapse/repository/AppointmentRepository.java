@@ -50,8 +50,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             "AND (:departmentId IS NULL OR a.department.id = :departmentId) " +
             "AND (:status IS NULL OR a.status = :status) " +
             "AND (:appointmentType IS NULL OR a.appointmentType = :appointmentType) " +
-            "AND (:startDate IS NULL OR DATE(a.startTime) >= :startDate) " +
-            "AND (:endDate IS NULL OR DATE(a.startTime) <= :endDate) " +
+            "AND (:startDate IS NULL OR a.startTime >= :startDate) " +
+            "AND (:endDate IS NULL OR a.startTime <= :endDate) " +
             "AND a.isActive = true " +
             "ORDER BY a.startTime DESC")
     Page<Appointment> findAppointmentsWithFilters(
@@ -61,8 +61,28 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("departmentId") Long departmentId,
             @Param("status") Appointment.AppointmentStatus status,
             @Param("appointmentType") Appointment.AppointmentType appointmentType,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            Pageable pageable);
+
+    @Query("SELECT a FROM Appointment a WHERE " +
+            "(:hospitalId IS NULL OR a.hospital.id = :hospitalId) AND " +
+            "(:doctorId IS NULL OR a.doctor.id = :doctorId) AND " +
+            "(:patientId IS NULL OR a.patient.id = :patientId) AND " +
+            "(:departmentId IS NULL OR a.department.id = :departmentId) AND " +
+            "(:appointmentType IS NULL OR a.appointmentType = :appointmentType) AND " +
+            "(:startDate IS NULL OR a.startTime >= :startDate) AND " +
+            "(:endDate IS NULL OR a.startTime <= :endDate) AND " +
+            "(:statusList IS NULL OR a.status IN :statusList)")
+    Page<Appointment> findAppointmentsWithFilters(
+            @Param("hospitalId") Long hospitalId,
+            @Param("doctorId") Long doctorId,
+            @Param("patientId") Long patientId,
+            @Param("departmentId") Long departmentId,
+            @Param("appointmentType") Appointment.AppointmentType appointmentType,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") java.time.LocalDateTime endDate,
+            @Param("statusList") List<Appointment.AppointmentStatus> statusList,
             Pageable pageable);
 
     // Doctor availability check for time conflicts

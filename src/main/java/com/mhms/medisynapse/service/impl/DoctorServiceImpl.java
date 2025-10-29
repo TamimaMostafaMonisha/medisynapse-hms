@@ -89,9 +89,13 @@ public class DoctorServiceImpl implements DoctorService {
         log.info("Fetching patients for doctor ID: {} with status: {}, search: {}",
                 doctorId, status, search);
 
-        validateDoctor(doctorId);
-
-        Page<Patient> patientPage = patientRepository.findPatientsByDoctor(doctorId, status, search, pageable);
+        Page<Patient> patientPage;
+        if (doctorId != null) {
+            validateDoctor(doctorId);
+            patientPage = patientRepository.findPatientsByDoctor(doctorId, status, search, pageable);
+        } else {
+            patientPage = patientRepository.findAllPatientsWithFilters(status, search, pageable);
+        }
 
         List<DoctorPatientDto> patientDtos = patientPage.getContent().stream()
                 .map(patient -> mapToPatientDto(patient, doctorId))

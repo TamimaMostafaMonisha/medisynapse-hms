@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -17,7 +18,7 @@ public class AppointmentFilterDto {
     private Long doctorId;
     private Long patientId;
     private Long departmentId;
-    private Appointment.AppointmentStatus status;
+    private List<Appointment.AppointmentStatus> status;
     private Appointment.AppointmentType appointmentType;
     private LocalDate startDate;
     private LocalDate endDate;
