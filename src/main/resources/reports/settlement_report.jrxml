@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
+              http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="settlement_report" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20"
+              rightMargin="20" topMargin="20" bottomMargin="20">
+
+    <property name="ireport.zoom" value="1.0"/>
+    <property name="ireport.x" value="0"/>
+    <property name="ireport.y" value="0"/>
+
+    <!-- Parameters -->
+    <parameter name="settlementId" class="java.lang.Long"/>
+    <parameter name="settlementNumber" class="java.lang.String"/>
+    <parameter name="patientName" class="java.lang.String"/>
+    <parameter name="patientId" class="java.lang.String"/>
+    <parameter name="settlementDate" class="java.lang.String"/>
+    <parameter name="settlementPeriodFrom" class="java.lang.String"/>
+    <parameter name="settlementPeriodTo" class="java.lang.String"/>
+    <parameter name="totalBilledAmount" class="java.math.BigDecimal"/>
+    <parameter name="totalPaidAmount" class="java.math.BigDecimal"/>
+    <parameter name="totalOutstanding" class="java.math.BigDecimal"/>
+    <parameter name="paymentMethod" class="java.lang.String"/>
+    <parameter name="hospitalName" class="java.lang.String"/>
+    <parameter name="hospitalAddress" class="java.lang.String"/>
+    <parameter name="hospitalPhone" class="java.lang.String"/>
+    <parameter name="remarks" class="java.lang.String"/>
+
+    <!-- Title -->
+    <title>
+        <band height="120" splitType="Stretch">
+            <staticText>
+                <reportElement x="0" y="0" width="555" height="30"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="20" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Payment Settlement Report]]></text>
+            </staticText>
+
+            <textField>
+                <reportElement x="0" y="35" width="555" height="20"/>
+                <textElement textAlignment="Center">
+                    <font size="12"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{hospitalName}]]></textFieldExpression>
+            </textField>
+
+            <textField>
+                <reportElement x="0" y="55" width="555" height="15"/>
+                <textElement textAlignment="Center">
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{hospitalAddress}]]></textFieldExpression>
+            </textField>
+
+            <textField>
+                <reportElement x="0" y="70" width="555" height="15"/>
+                <textElement textAlignment="Center">
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA["Phone: " + $P{hospitalPhone}]]></textFieldExpression>
+            </textField>
+
+            <line>
+                <reportElement x="0" y="95" width="555" height="1"/>
+            </line>
+
+            <textField>
+                <reportElement x="0" y="100" width="555" height="15"/>
+                <textElement textAlignment="Right">
+                    <font size="9"/>
+                </textElement>
+                <textFieldExpression><![CDATA["Settlement Date: " + $P{settlementDate}]]></textFieldExpression>
+            </textField>
+        </band>
+    </title>
+
+    <!-- Page Header -->
+    <pageHeader>
+        <band height="120" splitType="Stretch">
+            <staticText>
+                <reportElement x="0" y="10" width="150" height="20"/>
+                <textElement>
+                    <font size="10" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Settlement Number:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="150" y="10" width="200" height="20"/>
+                <textElement>
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{settlementNumber}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="0" y="35" width="150" height="20"/>
+                <textElement>
+                    <font size="10" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Patient Name:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="150" y="35" width="200" height="20"/>
+                <textElement>
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{patientName}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="0" y="60" width="150" height="20"/>
+                <textElement>
+                    <font size="10" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Patient ID:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="150" y="60" width="200" height="20"/>
+                <textElement>
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{patientId}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="0" y="85" width="150" height="20"/>
+                <textElement>
+                    <font size="10" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Settlement Period:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="150" y="85" width="405" height="20"/>
+                <textElement>
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$P{settlementPeriodFrom} + " to " + $P{settlementPeriodTo}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageHeader>
+
+    <!-- Column Header -->
+    <columnHeader>
+        <band height="50" splitType="Stretch">
+            <staticText>
+                <reportElement mode="Opaque" x="0" y="0" width="555" height="25" backcolor="#E0E0E0"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[  Settlement Summary]]></text>
+            </staticText>
+        </band>
+    </columnHeader>
+
+    <!-- Detail -->
+    <detail>
+        <band height="220" splitType="Stretch">
+            <rectangle>
+                <reportElement x="0" y="10" width="555" height="150" backcolor="#F5F5F5"/>
+                <graphicElement>
+                    <pen lineWidth="1.0"/>
+                </graphicElement>
+            </rectangle>
+
+            <staticText>
+                <reportElement x="20" y="25" width="200" height="25"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="11" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Total Billed Amount:]]></text>
+            </staticText>
+            <textField pattern="#,##0.00">
+                <reportElement x="350" y="25" width="185" height="25"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="11"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{totalBilledAmount}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="20" y="55" width="200" height="25"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="11" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Total Paid Amount:]]></text>
+            </staticText>
+            <textField pattern="#,##0.00">
+                <reportElement x="350" y="55" width="185" height="25"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="11"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{totalPaidAmount}]]></textFieldExpression>
+            </textField>
+
+            <line>
+                <reportElement x="20" y="90" width="515" height="1"/>
+            </line>
+
+            <staticText>
+                <reportElement x="20" y="100" width="200" height="30"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Total Outstanding:]]></text>
+            </staticText>
+            <textField pattern="#,##0.00">
+                <reportElement x="350" y="100" width="185" height="30"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{totalOutstanding}]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="0" y="175" width="150" height="20"/>
+                <textElement>
+                    <font size="10" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Payment Method:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="150" y="175" width="405" height="20"/>
+                <textElement>
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA[$P{paymentMethod} != null ? $P{paymentMethod} : "N/A"]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement x="0" y="200" width="150" height="20"/>
+                <textElement>
+                    <font size="10" isBold="true"/>
+                </textElement>
+                <text><![CDATA[Remarks:]]></text>
+            </staticText>
+            <textField isStretchWithOverflow="true">
+                <reportElement x="150" y="200" width="405" height="20"/>
+                <textElement>
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{remarks} != null ? $P{remarks} : "N/A"]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+
+    <!-- Page Footer -->
+    <pageFooter>
+        <band height="70" splitType="Stretch">
+            <line>
+                <reportElement x="0" y="5" width="555" height="1"/>
+            </line>
+            <staticText>
+                <reportElement x="0" y="20" width="555" height="15"/>
+                <textElement textAlignment="Center">
+                    <font size="9" isBold="true"/>
+                </textElement>
+                <text><![CDATA[This is a computer-generated document. No signature is required.]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="0" y="45" width="277" height="15"/>
+                <textElement textAlignment="Left">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression>
+                    <![CDATA["Generated on: " + new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new java.util.Date())]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="455" y="45" width="50" height="15"/>
+                <textElement textAlignment="Right">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+            <textField evaluationTime="Report">
+                <reportElement x="505" y="45" width="50" height="15"/>
+                <textElement textAlignment="Left">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[" of " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+
+</jasperReport>
+

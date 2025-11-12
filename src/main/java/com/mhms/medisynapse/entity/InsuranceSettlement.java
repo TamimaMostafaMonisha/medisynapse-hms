@@ -1,6 +1,5 @@
 package com.mhms.medisynapse.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -19,39 +18,35 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "patient_insurance")
+@Table(name = "insurance_settlement")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @ToString(onlyExplicitlyIncluded = true)
-public class PatientInsurance {
+public class InsuranceSettlement {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_patient_id", nullable = false, referencedColumnName = "id")
-    private Patient patient;
+    @JoinColumn(name = "fk_claim_id", nullable = false, referencedColumnName = "id")
+    private InsuranceClaim claim;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_insurance_id", nullable = false, referencedColumnName = "id")
-    private Insurance insurance;
+    @Column(name = "amount_settled", nullable = false, precision = 15, scale = 2)
+    private BigDecimal amountSettled;
 
-    @Column(name = "is_primary")
-    private Boolean isPrimary = false;
+    @Column(name = "settlement_date")
+    private LocalDateTime settlementDate;
 
-    @Column(name = "created_dt", nullable = false, updatable = false)
-    private LocalDateTime createdDt;
-
-    @Column(name = "last_updated_dt")
-    private LocalDateTime lastUpdatedDt;
+    @Column(name = "remarks")
+    private String remarks;
 
     @Column(name = "created_by")
     private Long createdBy;
@@ -67,12 +62,12 @@ public class PatientInsurance {
 
     @PrePersist
     protected void onCreate() {
-        createdDt = LocalDateTime.now();
-        lastUpdatedDt = LocalDateTime.now();
+        settlementDate = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        lastUpdatedDt = LocalDateTime.now();
+        // Update logic if needed
     }
 }
+

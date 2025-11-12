@@ -1,8 +1,9 @@
 package com.mhms.medisynapse.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,39 +20,43 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "patient_insurance")
+@Table(name = "insurance_claim")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @ToString(onlyExplicitlyIncluded = true)
-public class PatientInsurance {
+public class InsuranceClaim {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_patient_id", nullable = false, referencedColumnName = "id")
-    private Patient patient;
+    @JoinColumn(name = "fk_billing_id", nullable = false, referencedColumnName = "id")
+    private Billing billing;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_insurance_id", nullable = false, referencedColumnName = "id")
-    private Insurance insurance;
+    @JoinColumn(name = "fk_policy_id", nullable = false, referencedColumnName = "id")
+    private Insurance policy;
 
-    @Column(name = "is_primary")
-    private Boolean isPrimary = false;
+    @Column(name = "claim_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal claimAmount;
 
-    @Column(name = "created_dt", nullable = false, updatable = false)
-    private LocalDateTime createdDt;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 50)
+    private ClaimStatus status = ClaimStatus.SUBMITTED;
 
-    @Column(name = "last_updated_dt")
-    private LocalDateTime lastUpdatedDt;
+    @Column(name = "submitted_dt")
+    private LocalDateTime submittedDt;
+
+    @Column(name = "settled_dt")
+    private LocalDateTime settledDt;
 
     @Column(name = "created_by")
     private Long createdBy;
@@ -67,12 +72,21 @@ public class PatientInsurance {
 
     @PrePersist
     protected void onCreate() {
-        createdDt = LocalDateTime.now();
-        lastUpdatedDt = LocalDateTime.now();
+        submittedDt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        lastUpdatedDt = LocalDateTime.now();
+        // Update logic if needed
+    }
+
+    public enum ClaimStatus {
+        SUBMITTED,
+        PENDING,
+        APPROVED,
+        REJECTED,
+        SETTLED,
+        CANCELLED
     }
 }
+

@@ -1,5 +1,8 @@
 package com.mhms.medisynapse.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,6 +38,7 @@ import java.util.Set;
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Billing {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,14 +47,45 @@ public class Billing {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_patient_id", nullable = false, referencedColumnName = "id")
+    @JsonIgnoreProperties({"patientHospitals", "patientInsurances", "appointments", "ehrs", "billings", "address", "hibernateLazyInitializer", "handler"})
     private Patient patient;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_hospital_id", nullable = false, referencedColumnName = "id")
+    @JsonIgnoreProperties({"departments", "users", "patientHospitals", "appointments", "address"})
+    private Hospital hospital;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_appointment_id", referencedColumnName = "id")
+    @JsonIgnoreProperties({"patient", "doctor", "hospital", "department", "labTestOrders", "prescriptions", "billing"})
     private Appointment appointment;
 
-    @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
+    @Column(name = "bill_number", unique = true, nullable = false, length = 100)
+    private String billNumber;
+
+    @Column(name = "bill_date", nullable = false)
+    private java.time.LocalDate billDate;
+
+    @Column(name = "due_date")
+    private java.time.LocalDate dueDate;
+
+    @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount;
+
+    @Column(name = "discount_amount", precision = 15, scale = 2)
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Column(name = "tax_amount", precision = 15, scale = 2)
+    private BigDecimal taxAmount = BigDecimal.ZERO;
+
+    @Column(name = "net_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal netAmount;
+
+    @Column(name = "paid_amount", precision = 15, scale = 2)
+    private BigDecimal paidAmount = BigDecimal.ZERO;
+
+    @Column(name = "outstanding_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal outstandingAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method")
@@ -58,7 +93,10 @@ public class Billing {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private BillingStatus status = BillingStatus.PENDING;
+    private BillingStatus status = BillingStatus.DRAFT;
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
 
     @Column(name = "created_dt", nullable = false, updatable = false)
     private LocalDateTime createdDt;
@@ -79,6 +117,7 @@ public class Billing {
     private Integer version = 1;
 
     // Relationships
+    @JsonIgnore
     @OneToMany(mappedBy = "billing", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Payment> payments;
 
@@ -94,10 +133,10 @@ public class Billing {
     }
 
     public enum PaymentMethod {
-        CASH, CARD, INSURANCE, BANK_TRANSFER, OTHER
+        CASH, CARD, INSURANCE, BANK_TRANSFER, MOBILE_PAYMENT
     }
 
     public enum BillingStatus {
-        DRAFT, PENDING, PAID, PARTIALLY_PAID, CANCELLED, REFUNDED, SENT
+        DRAFT, SENT, PAID, PARTIALLY_PAID, OVERDUE, CANCELLED, REFUNDED
     }
 }

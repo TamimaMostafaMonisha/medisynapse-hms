@@ -1,11 +1,7 @@
 package com.mhms.medisynapse.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,7 +11,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -23,46 +18,41 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "patient_hospital",
-        uniqueConstraints = @UniqueConstraint(name = "unique_patient_hospital",
-                columnNames = {"fk_patient_id", "fk_hospital_id"}))
+@Table(name = "bill_item")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class PatientHospital {
-
+public class BillItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_patient_id", nullable = false, referencedColumnName = "id")
-    @JsonBackReference("patient-hospitals")
-    private Patient patient;
+    @JoinColumn(name = "fk_billing_id", nullable = false, referencedColumnName = "id")
+    private Billing billing;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_hospital_id", nullable = false, referencedColumnName = "id")
-    @JsonIgnoreProperties({"departments", "users", "patientHospitals", "appointments", "address"})
-    private Hospital hospital;
+    @Column(name = "service_type", nullable = false, length = 100)
+    private String serviceType;
 
-    @Column(name = "registration_date")
-    private LocalDate registrationDate;
+    @Column(name = "description")
+    private String description;
 
-    @Column(name = "patient_id_number", length = 50)
-    private String patientIdNumber;
+    @Column(name = "quantity")
+    private Integer quantity = 1;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
-    private PatientHospitalStatus status = PatientHospitalStatus.ACTIVE;
+    @Column(name = "unit_price", nullable = false, precision = 15, scale = 2)
+    private BigDecimal unitPrice;
+
+    @Column(name = "total", nullable = false, precision = 15, scale = 2)
+    private BigDecimal total;
 
     @Column(name = "created_dt", nullable = false, updatable = false)
     private LocalDateTime createdDt;
@@ -86,17 +76,11 @@ public class PatientHospital {
     protected void onCreate() {
         createdDt = LocalDateTime.now();
         lastUpdatedDt = LocalDateTime.now();
-        if (registrationDate == null) {
-            registrationDate = LocalDate.now();
-        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         lastUpdatedDt = LocalDateTime.now();
     }
-
-    public enum PatientHospitalStatus {
-        ACTIVE, INACTIVE, TRANSFERRED
-    }
 }
+

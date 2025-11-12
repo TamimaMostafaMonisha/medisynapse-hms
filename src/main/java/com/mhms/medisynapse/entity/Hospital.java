@@ -1,5 +1,7 @@
 package com.mhms.medisynapse.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -29,6 +31,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false, exclude = {"departments", "users", "patientHospitals", "appointments", "address"})
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Hospital {
 
     @Id
@@ -102,15 +105,19 @@ public class Hospital {
     private Integer version = 1;
 
     // Relationships
+    @JsonIgnore
     @OneToMany(mappedBy = "hospital", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Department> departments;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "hospital", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<User> users;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "hospital", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<PatientHospital> patientHospitals;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "hospital", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Appointment> appointments;
 

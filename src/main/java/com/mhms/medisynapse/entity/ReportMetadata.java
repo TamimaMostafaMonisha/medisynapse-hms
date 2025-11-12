@@ -1,6 +1,5 @@
 package com.mhms.medisynapse.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -10,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -22,42 +20,38 @@ import lombok.ToString;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "patient_insurance")
+@Table(name = "report_metadata")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @ToString(onlyExplicitlyIncluded = true)
-public class PatientInsurance {
+public class ReportMetadata {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_patient_id", nullable = false, referencedColumnName = "id")
-    private Patient patient;
+    @JoinColumn(name = "fk_billing_id", referencedColumnName = "id")
+    private Billing billing;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_insurance_id", nullable = false, referencedColumnName = "id")
-    private Insurance insurance;
+    @JoinColumn(name = "fk_claim_id", referencedColumnName = "id")
+    private InsuranceClaim claim;
 
-    @Column(name = "is_primary")
-    private Boolean isPrimary = false;
+    @Column(name = "report_type", length = 100)
+    private String reportType;
 
-    @Column(name = "created_dt", nullable = false, updatable = false)
-    private LocalDateTime createdDt;
+    @Column(name = "generated_at")
+    private LocalDateTime generatedAt;
 
-    @Column(name = "last_updated_dt")
-    private LocalDateTime lastUpdatedDt;
+    @Column(name = "file_path")
+    private String filePath;
 
     @Column(name = "created_by")
     private Long createdBy;
-
-    @Column(name = "updated_by")
-    private Long updatedBy;
 
     @Column(name = "is_active")
     private Boolean isActive = true;
@@ -67,12 +61,7 @@ public class PatientInsurance {
 
     @PrePersist
     protected void onCreate() {
-        createdDt = LocalDateTime.now();
-        lastUpdatedDt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        lastUpdatedDt = LocalDateTime.now();
+        generatedAt = LocalDateTime.now();
     }
 }
+
