@@ -207,17 +207,29 @@ public class BillingServiceImpl implements BillingService {
     }
 
     @Override
-    public Page<BillingResponseDto> getBillingsByPatientId(Long patientId, Pageable pageable) {
-        log.info("Fetching billings for patient ID: {}", patientId);
-        return billingRepository.findByPatientIdAndIsActiveTrue(patientId, pageable)
-                .map(BillingResponseDto::fromEntity);
+    public Page<BillingResponseDto> getBillingsByPatientId(Long patientId, Billing.BillingStatus status, Pageable pageable) {
+        log.info("Fetching billings for patient ID: {} with status: {}", patientId, status);
+
+        if (status != null) {
+            return billingRepository.findByPatientIdAndStatusAndIsActiveTrue(patientId, status, pageable)
+                    .map(BillingResponseDto::fromEntity);
+        } else {
+            return billingRepository.findByPatientIdAndIsActiveTrue(patientId, pageable)
+                    .map(BillingResponseDto::fromEntity);
+        }
     }
 
     @Override
-    public Page<BillingResponseDto> getBillingsByHospitalId(Long hospitalId, Pageable pageable) {
-        log.info("Fetching billings for hospital ID: {}", hospitalId);
-        return billingRepository.findByHospitalIdAndIsActiveTrue(hospitalId, pageable)
-                .map(BillingResponseDto::fromEntity);
+    public Page<BillingResponseDto> getBillingsByHospitalId(Long hospitalId, Billing.BillingStatus status, Pageable pageable) {
+        log.info("Fetching billings for hospital ID: {} with status: {}", hospitalId, status);
+
+        if (status != null) {
+            return billingRepository.findByHospitalIdAndStatusAndIsActiveTrue(hospitalId, status, pageable)
+                    .map(BillingResponseDto::fromEntity);
+        } else {
+            return billingRepository.findByHospitalIdAndIsActiveTrue(hospitalId, pageable)
+                    .map(BillingResponseDto::fromEntity);
+        }
     }
 
     private String generateBillNumber() {

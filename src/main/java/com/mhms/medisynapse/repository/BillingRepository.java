@@ -14,8 +14,14 @@ public interface BillingRepository extends JpaRepository<Billing, Long> {
     @Query("SELECT b FROM Billing b WHERE b.patient.id = :patientId AND b.isActive = true")
     Page<Billing> findByPatientIdAndIsActiveTrue(@Param("patientId") Long patientId, Pageable pageable);
 
+    @Query("SELECT b FROM Billing b WHERE b.patient.id = :patientId AND b.status = :status AND b.isActive = true")
+    Page<Billing> findByPatientIdAndStatusAndIsActiveTrue(@Param("patientId") Long patientId, @Param("status") Billing.BillingStatus status, Pageable pageable);
+
     @Query("SELECT b FROM Billing b JOIN b.patient p JOIN p.patientHospitals ph WHERE ph.hospital.id = :hospitalId AND b.isActive = true")
     Page<Billing> findByHospitalIdAndIsActiveTrue(@Param("hospitalId") Long hospitalId, Pageable pageable);
+
+    @Query("SELECT b FROM Billing b JOIN b.patient p JOIN p.patientHospitals ph WHERE ph.hospital.id = :hospitalId AND b.status = :status AND b.isActive = true")
+    Page<Billing> findByHospitalIdAndStatusAndIsActiveTrue(@Param("hospitalId") Long hospitalId, @Param("status") Billing.BillingStatus status, Pageable pageable);
 
     @Query("SELECT b FROM Billing b WHERE b.status = :status AND b.isActive = true")
     Page<Billing> findByStatusAndIsActiveTrue(@Param("status") Billing.BillingStatus status, Pageable pageable);

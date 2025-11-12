@@ -6,6 +6,7 @@ import com.mhms.medisynapse.dto.BillingResponseDto;
 import com.mhms.medisynapse.dto.CreateBillRequestDto;
 import com.mhms.medisynapse.dto.RefundRequestDto;
 import com.mhms.medisynapse.entity.BillItem;
+import com.mhms.medisynapse.entity.Billing;
 import com.mhms.medisynapse.entity.Refund;
 import com.mhms.medisynapse.service.BillingService;
 import jakarta.validation.Valid;
@@ -121,13 +122,14 @@ public class BillingController {
     @GetMapping(value = "/patient/{patientId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Page<BillingResponseDto>>> getPatientBillings(
             @PathVariable Long patientId,
+            @RequestParam(required = false) Billing.BillingStatus status,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) {
 
-        log.info("Fetching billings for patient ID: {}", patientId);
+        log.info("Fetching billings for patient ID: {} with status: {}", patientId, status);
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDt"));
-        Page<BillingResponseDto> billings = billingService.getBillingsByPatientId(patientId, pageable);
+        Page<BillingResponseDto> billings = billingService.getBillingsByPatientId(patientId, status, pageable);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Patient billings retrieved successfully", billings)
@@ -137,13 +139,14 @@ public class BillingController {
     @GetMapping(value = "/hospital/{hospitalId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Page<BillingResponseDto>>> getHospitalBillings(
             @PathVariable Long hospitalId,
+            @RequestParam(required = false) Billing.BillingStatus status,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) {
 
-        log.info("Fetching billings for hospital ID: {}", hospitalId);
+        log.info("Fetching billings for hospital ID: {} with status: {}", hospitalId, status);
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDt"));
-        Page<BillingResponseDto> billings = billingService.getBillingsByHospitalId(hospitalId, pageable);
+        Page<BillingResponseDto> billings = billingService.getBillingsByHospitalId(hospitalId, status, pageable);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Hospital billings retrieved successfully", billings)

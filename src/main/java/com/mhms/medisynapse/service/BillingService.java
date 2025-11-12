@@ -28,8 +28,8 @@ public interface BillingService {
 
     List<Refund> getRefundsByBillingId(Long billingId);
 
-    Page<BillingResponseDto> getBillingsByPatientId(Long patientId, Pageable pageable);
+    Page<BillingResponseDto> getBillingsByPatientId(Long patientId, Billing.BillingStatus status, Pageable pageable);
 
-    Page<BillingResponseDto> getBillingsByHospitalId(Long hospitalId, Pageable pageable);
+    Page<BillingResponseDto> getBillingsByHospitalId(Long hospitalId, Billing.BillingStatus status, Pageable pageable);
 }
 
