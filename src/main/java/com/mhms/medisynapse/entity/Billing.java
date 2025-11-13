@@ -1,6 +1,5 @@
 package com.mhms.medisynapse.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.CascadeType;
@@ -133,7 +132,7 @@ public class Billing {
     }
 
     public enum PaymentMethod {
-        CASH, CARD, INSURANCE, BANK_TRANSFER, MOBILE_PAYMENT
+        CASH, CARD, MOBILE_PAYMENT, BANK_TRANSFER, CHECK, INSURANCE, OTHER
     }
 
     public enum BillingStatus {

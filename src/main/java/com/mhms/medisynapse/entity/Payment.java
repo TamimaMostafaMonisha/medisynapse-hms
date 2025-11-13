@@ -1,5 +1,6 @@
 package com.mhms.medisynapse.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -27,6 +28,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Payment {
 
     @Id
@@ -35,6 +37,7 @@ public class Payment {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_billing_id", nullable = false, referencedColumnName = "id")
+    @JsonIgnoreProperties({"payments", "patient", "hospital", "appointment", "hibernateLazyInitializer", "handler"})
     private Billing billing;
 
     @Column(name = "amount", nullable = false, precision = 12, scale = 2)
@@ -80,6 +83,6 @@ public class Payment {
     }
 
     public enum PaymentMethod {
-        CASH, CARD, INSURANCE, BANK_TRANSFER, OTHER
+        CASH, CARD, MOBILE_PAYMENT, BANK_TRANSFER, CHECK, INSURANCE, OTHER
     }
 }

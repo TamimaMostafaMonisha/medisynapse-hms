@@ -29,4 +29,3 @@ public interface UserService {
 
     DoctorAvailabilityDto getDoctorAvailability(Long doctorId, LocalDate date);
 }
-
