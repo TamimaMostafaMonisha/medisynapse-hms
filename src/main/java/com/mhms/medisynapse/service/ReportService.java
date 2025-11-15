@@ -34,6 +34,13 @@ public interface ReportService {
     ReportMetadata generateSettlementReport(Long claimId, Long createdBy);
 
     /**
+     * Generate a payment receipt report (on-demand, no metadata stored)
+     * @param paymentId The payment ID
+     * @return byte array of the PDF report
+     */
+    byte[] generateReceiptReport(Long paymentId);
+
+    /**
      * Get all reports for a specific billing
      *
      * @param billingId The billing ID

@@ -4,13 +4,18 @@ import com.mhms.medisynapse.entity.BillItem;
 import com.mhms.medisynapse.entity.Billing;
 import com.mhms.medisynapse.entity.InsuranceClaim;
 import com.mhms.medisynapse.entity.InsuranceSettlement;
+import com.mhms.medisynapse.entity.Payment;
+import com.mhms.medisynapse.entity.Patient;
+import com.mhms.medisynapse.entity.Hospital;
 import com.mhms.medisynapse.entity.ReportMetadata;
 import com.mhms.medisynapse.repository.BillItemRepository;
 import com.mhms.medisynapse.repository.BillingRepository;
 import com.mhms.medisynapse.repository.InsuranceClaimRepository;
 import com.mhms.medisynapse.repository.InsuranceSettlementRepository;
+import com.mhms.medisynapse.repository.PaymentRepository;
 import com.mhms.medisynapse.repository.ReportMetadataRepository;
 import com.mhms.medisynapse.service.ReportService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JREmptyDataSource;
@@ -39,6 +44,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReportServiceImpl implements ReportService {
 
@@ -47,22 +53,10 @@ public class ReportServiceImpl implements ReportService {
     private final InsuranceClaimRepository insuranceClaimRepository;
     private final BillItemRepository billItemRepository;
     private final InsuranceSettlementRepository insuranceSettlementRepository;
+    private final PaymentRepository paymentRepository;
 
     @Value("${app.reports.storage-path:uploads/reports}")
     private String reportsStoragePath;
-
-    public ReportServiceImpl(
-            ReportMetadataRepository reportMetadataRepository,
-            BillingRepository billingRepository,
-            InsuranceClaimRepository insuranceClaimRepository,
-            BillItemRepository billItemRepository,
-            InsuranceSettlementRepository insuranceSettlementRepository) {
-        this.reportMetadataRepository = reportMetadataRepository;
-        this.billingRepository = billingRepository;
-        this.insuranceClaimRepository = insuranceClaimRepository;
-        this.billItemRepository = billItemRepository;
-        this.insuranceSettlementRepository = insuranceSettlementRepository;
-    }
 
 
     @Override
@@ -244,6 +238,37 @@ public class ReportServiceImpl implements ReportService {
     }
 
     @Override
+    public byte[] generateReceiptReport(Long paymentId) {
+        log.info("Generating receipt report for payment ID: {}", paymentId);
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new RuntimeException("Payment not found with ID: " + paymentId));
+        Billing billing = payment.getBilling();
+        Hospital hospital = billing.getHospital();
+        Patient patient = payment.getPatient();
+        try {
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("hospitalName", hospital.getName());
+            parameters.put("hospitalAddress", hospital.getAddressString() != null ? hospital.getAddressString() : (hospital.getAddress() != null ? hospital.getAddress().getFullAddress() : ""));
+            parameters.put("hospitalContact", hospital.getPhone() != null ? hospital.getPhone() : "");
+            parameters.put("receiptNumber", "RCPT-" + payment.getId());
+            parameters.put("patientName", patient.getFirstName() + " " + patient.getLastName());
+            parameters.put("paymentDate", payment.getPaymentDate());
+            parameters.put("amount", payment.getAmount());
+            parameters.put("paymentMethod", payment.getPaymentMethod().toString());
+            parameters.put("referenceNo", payment.getReferenceNo() != null ? payment.getReferenceNo() : "N/A");
+
+            // Generate PDF in memory
+            byte[] pdfBytes = generateJasperReportBytes("receipt_report.jrxml", parameters, new JREmptyDataSource());
+
+            log.info("Receipt report generated successfully for payment ID: {}", paymentId);
+            return pdfBytes;
+        } catch (Exception e) {
+            log.error("Error generating receipt report", e);
+            throw new RuntimeException("Failed to generate receipt report: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public List<ReportMetadata> getReportsByBillingId(Long billingId) {
         log.info("Fetching reports for billing ID: {}", billingId);
         return reportMetadataRepository.findByBillingId(billingId);
@@ -293,6 +318,24 @@ public class ReportServiceImpl implements ReportService {
 
         log.info("Report generated successfully at: {}", outputPath);
         return outputPath;
+    }
+
+    private byte[] generateJasperReportBytes(String templateName, Map<String, Object> parameters,
+                                             JRDataSource dataSource) throws Exception {
+        // Load template
+        InputStream reportStream = new ClassPathResource("reports/" + templateName).getInputStream();
+
+        // Compile report
+        JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
+
+        // Fill report
+        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
+
+        // Export to PDF bytes
+        byte[] pdfBytes = JasperExportManager.exportReportToPdf(jasperPrint);
+
+        log.info("Report generated successfully in memory");
+        return pdfBytes;
     }
 }
 

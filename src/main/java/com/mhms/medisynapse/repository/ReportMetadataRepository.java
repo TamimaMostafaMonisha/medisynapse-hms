@@ -20,4 +20,3 @@ public interface ReportMetadataRepository extends JpaRepository<ReportMetadata, 
     @Query("SELECT rm FROM ReportMetadata rm WHERE rm.reportType = :reportType AND rm.isActive = true ORDER BY rm.generatedAt DESC")
     List<ReportMetadata> findByReportType(@Param("reportType") String reportType);
 }
-

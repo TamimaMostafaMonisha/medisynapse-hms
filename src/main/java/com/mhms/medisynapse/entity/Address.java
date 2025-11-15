@@ -104,6 +104,34 @@ public class Address {
         lastUpdatedDt = LocalDateTime.now();
     }
 
+    public String getFullAddress() {
+        StringBuilder sb = new StringBuilder();
+        if (line1 != null && !line1.isEmpty()) {
+            sb.append(line1);
+        }
+        if (line2 != null && !line2.isEmpty()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(line2);
+        }
+        if (city != null && !city.isEmpty()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(city);
+        }
+        if (state != null && !state.isEmpty()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(state);
+        }
+        if (postalCode != null && !postalCode.isEmpty()) {
+            if (sb.length() > 0) sb.append(" ");
+            sb.append(postalCode);
+        }
+        if (country != null && !country.isEmpty()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(country);
+        }
+        return sb.toString();
+    }
+
     public enum AddressType {
         HOME, WORK, BILLING, SHIPPING, OTHER
     }

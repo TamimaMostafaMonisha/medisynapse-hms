@@ -137,5 +137,22 @@ public class ReportController {
                 ApiResponse.success("Report retrieved successfully", report)
         );
     }
+
+    @GetMapping(value = "/receipt/{paymentId}", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> downloadReceiptReport(@PathVariable Long paymentId) {
+        log.info("Generating and downloading receipt report for payment ID: {}", paymentId);
+
+        byte[] pdfBytes = reportService.generateReceiptReport(paymentId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=RECEIPT_" + paymentId + ".pdf");
+        headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE);
+
+        log.info("Successfully generated receipt report for payment ID: {}", paymentId);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
+    }
 }
 
