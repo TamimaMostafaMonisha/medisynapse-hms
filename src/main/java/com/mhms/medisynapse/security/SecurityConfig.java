@@ -56,10 +56,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/doctors/**").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR")
 
                         // Download Report endpoints
-                        .requestMatchers("/api/v1/reports/download", "/api/v1/reports/*/download").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN")
+                        .requestMatchers("/api/v1/reports/download", "/api/v1/reports/*/download").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN", "RECEPTIONIST")
 
                         // Billing endpoints
                         .requestMatchers("/api/v1/billing/**").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST")
+
+                        // Receptionist profile endpoint
+                        .requestMatchers("/api/v1/receptionist/**").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN", "RECEPTIONIST")
 
                         // Patient endpoints
                         .requestMatchers("/api/patients/**").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "PATIENT")
@@ -92,4 +95,3 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 }
-

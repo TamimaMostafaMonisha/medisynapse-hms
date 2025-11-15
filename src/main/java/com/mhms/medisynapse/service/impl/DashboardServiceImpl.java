@@ -7,6 +7,7 @@ import com.mhms.medisynapse.dto.DepartmentStatsDto;
 import com.mhms.medisynapse.dto.HospitalAdminResponseDto;
 import com.mhms.medisynapse.dto.RecentAdmissionDto;
 import com.mhms.medisynapse.dto.StaffOnDutyDto;
+import com.mhms.medisynapse.dto.ReceptionistResponseDto;
 import com.mhms.medisynapse.entity.Admission;
 import com.mhms.medisynapse.entity.DepartmentType;
 import com.mhms.medisynapse.entity.Hospital;
@@ -186,6 +187,28 @@ public class DashboardServiceImpl implements DashboardService {
             throw new ResourceNotFoundException("Hospital admin not found with id: " + id);
         }
         return HospitalAdminResponseDto.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .phone(user.getPhone())
+                .nationalId(user.getNationalId())
+                .hospitalId(user.getHospital() != null ? user.getHospital().getId() : null)
+                .hospitalName(user.getHospital() != null ? user.getHospital().getName() : null)
+                .status(user.getStatus().name())
+                .createdAt(user.getCreatedDt())
+                .lastUpdatedAt(user.getLastUpdatedDt())
+                .build();
+    }
+
+    @Override
+    public ReceptionistResponseDto getReceptionistProfile(Long id) {
+        User user = userRepository.findActiveUserById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Receptionist not found with id: " + id));
+        if (user.getRole() != User.UserRole.RECEPTIONIST) {
+            throw new ResourceNotFoundException("Receptionist not found with id: " + id);
+        }
+        return ReceptionistResponseDto.builder()
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
