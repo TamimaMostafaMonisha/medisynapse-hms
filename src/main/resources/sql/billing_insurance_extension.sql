@@ -94,7 +94,7 @@ ALTER TABLE payment
 
 -- Add reference_no column to payment table if it doesn't exist
 ALTER TABLE payment
-    ADD COLUMN IF NOT EXISTS reference_no VARCHAR(100) COMMENT 'Payment reference number';
+    ADD COLUMN reference_no VARCHAR(100) COMMENT 'Payment reference number';
 
 -- Verify the changes
 SELECT

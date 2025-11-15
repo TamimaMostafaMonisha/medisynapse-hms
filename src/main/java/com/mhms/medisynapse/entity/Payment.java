@@ -40,6 +40,11 @@ public class Payment {
     @JsonIgnoreProperties({"payments", "patient", "hospital", "appointment", "hibernateLazyInitializer", "handler"})
     private Billing billing;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_patient_id", nullable = false, referencedColumnName = "id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Patient patient;
+
     @Column(name = "amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 

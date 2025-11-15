@@ -42,9 +42,10 @@ public class PaymentServiceImpl implements PaymentService {
             throw new IllegalArgumentException("Payment amount cannot exceed outstanding amount: " + billing.getOutstandingAmount());
         }
 
-        // Create payment record
+        // Create a payment record
         Payment payment = new Payment();
         payment.setBilling(billing);
+        payment.setPatient(billing.getPatient());
         payment.setAmount(request.getAmount());
         payment.setPaymentDate(LocalDateTime.now());
         payment.setPaymentMethod(request.getPaymentMethod());
@@ -190,4 +191,3 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
     }
 }
-

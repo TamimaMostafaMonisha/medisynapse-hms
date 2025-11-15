@@ -55,6 +55,12 @@ public class SecurityConfig {
                         // Doctor endpoints
                         .requestMatchers("/api/doctors/**").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR")
 
+                        // Download Report endpoints
+                        .requestMatchers("/api/v1/reports/download", "/api/v1/reports/*/download").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN")
+
+                        // Billing endpoints
+                        .requestMatchers("/api/v1/billing/**").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST")
+
                         // Patient endpoints
                         .requestMatchers("/api/patients/**").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "PATIENT")
 
