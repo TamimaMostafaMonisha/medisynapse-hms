@@ -74,4 +74,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "AND u.role = 'HOSPITAL_ADMIN' " +
             "AND u.isActive = true")
     Page<User> findHospitalAdmins(@Param("hospitalId") Long hospitalId, Pageable pageable);
+
+    @Query("SELECT u FROM User u WHERE u.hospital.id = :hospitalId AND u.role = 'RECEPTIONIST' AND u.isActive = true ORDER BY u.name ASC")
+    List<User> findReceptionistsByHospital(@Param("hospitalId") Long hospitalId);
+
+    @Query("SELECT u FROM User u WHERE (:hospitalId IS NULL OR u.hospital.id = :hospitalId) AND u.role = 'RECEPTIONIST' AND u.isActive = true")
+    Page<User> findReceptionists(@Param("hospitalId") Long hospitalId, Pageable pageable);
+
+    @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u WHERE u.email = :email AND u.role = 'RECEPTIONIST' AND u.isActive = true")
+    boolean receptionistEmailExists(@Param("email") String email);
+
+    @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u WHERE u.email = :email AND u.id != :excludeId AND u.role = 'RECEPTIONIST' AND u.isActive = true")
+    boolean receptionistEmailExistsExcludingId(@Param("email") String email, @Param("excludeId") Long excludeId);
+
+    @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u WHERE u.phone = :phone AND u.id != :excludeId AND u.role = 'RECEPTIONIST' AND u.isActive = true")
+    boolean receptionistPhoneExistsExcludingId(@Param("phone") String phone, @Param("excludeId") Long excludeId);
+
+    @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u WHERE u.nationalId = :nationalId AND u.id != :excludeId AND u.role = 'RECEPTIONIST' AND u.isActive = true")
+    boolean receptionistNationalIdExistsExcludingId(@Param("nationalId") String nationalId, @Param("excludeId") Long excludeId);
 }

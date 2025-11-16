@@ -510,4 +510,191 @@ public class UserServiceImpl implements UserService {
                 .lastLoginAt(user.getLastLoginDt())
                 .build();
     }
+
+    @Override
+    public com.mhms.medisynapse.dto.ReceptionistResponseDto createReceptionist(com.mhms.medisynapse.dto.CreateReceptionistDto dto) {
+        log.info("Creating receptionist with email: {}", dto.getEmail());
+        Map<String, String> errors = new HashMap<>();
+        if (userRepository.receptionistEmailExists(dto.getEmail())) {
+            errors.put("email", "Email already exists for a receptionist");
+        }
+        if (dto.getNationalId() != null && !dto.getNationalId().trim().isEmpty() && userRepository.existsByNationalId(dto.getNationalId())) {
+            errors.put("nationalId", "National ID already in use");
+        }
+        if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty() && userRepository.existsByPhone(dto.getPhone())) {
+            errors.put("phone", "Phone number already in use");
+        }
+        if (!hospitalRepository.existsById(dto.getHospitalId())) {
+            errors.put("hospitalId", "Invalid hospital ID");
+        }
+        if (!errors.isEmpty()) {
+            throw new ValidationException("Validation failed", errors);
+        }
+        Hospital hospital = hospitalRepository.findById(dto.getHospitalId())
+                .orElseThrow(() -> new ResourceNotFoundException("Hospital not found with ID: " + dto.getHospitalId()));
+        User user = new User();
+        user.setName(dto.getName());
+        user.setEmail(dto.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+        user.setPhone(dto.getPhone());
+        user.setNationalId(dto.getNationalId());
+        user.setRole(User.UserRole.RECEPTIONIST);
+        user.setStatus(User.UserStatus.valueOf(dto.getStatus()));
+        user.setHospital(hospital);
+        user.setIsActive(true);
+        User saved = userRepository.save(user);
+        return com.mhms.medisynapse.dto.ReceptionistResponseDto.builder()
+                .id(saved.getId())
+                .name(saved.getName())
+                .email(saved.getEmail())
+                .role(saved.getRole().name())
+                .phone(saved.getPhone())
+                .nationalId(saved.getNationalId())
+                .hospitalId(saved.getHospital().getId())
+                .hospitalName(saved.getHospital().getName())
+                .status(saved.getStatus().name())
+                .createdAt(saved.getCreatedDt())
+                .lastUpdatedAt(saved.getLastUpdatedDt())
+                .build();
+    }
+
+    @Override
+    public com.mhms.medisynapse.dto.ReceptionistResponseDto updateReceptionist(Long id, com.mhms.medisynapse.dto.UpdateReceptionistDto dto) {
+        log.info("Updating receptionist with ID: {}", id);
+        User existing = userRepository.findActiveUserById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Receptionist not found with id: " + id));
+        if (existing.getRole() != User.UserRole.RECEPTIONIST) {
+            throw new ResourceNotFoundException("Receptionist not found with id: " + id);
+        }
+        Map<String, String> errors = new HashMap<>();
+        if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty() && userRepository.receptionistEmailExistsExcludingId(dto.getEmail(), id)) {
+            errors.put("email", "Email already exists");
+        }
+        if (dto.getNationalId() != null && !dto.getNationalId().trim().isEmpty() && userRepository.receptionistNationalIdExistsExcludingId(dto.getNationalId(), id)) {
+            errors.put("nationalId", "National ID already in use");
+        }
+        if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty() && userRepository.receptionistPhoneExistsExcludingId(dto.getPhone(), id)) {
+            errors.put("phone", "Phone number already in use");
+        }
+        if (dto.getHospitalId() != null && !hospitalRepository.existsById(dto.getHospitalId())) {
+            errors.put("hospitalId", "Invalid hospital ID");
+        }
+        if (!errors.isEmpty()) {
+            throw new ValidationException("Validation failed", errors);
+        }
+        if (dto.getName() != null && !dto.getName().trim().isEmpty()) existing.setName(dto.getName().trim());
+        if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) existing.setEmail(dto.getEmail().trim());
+        if (dto.getPhone() != null) existing.setPhone(dto.getPhone().trim().isEmpty() ? null : dto.getPhone().trim());
+        if (dto.getNationalId() != null) existing.setNationalId(dto.getNationalId().trim().isEmpty() ? null : dto.getNationalId().trim());
+        if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) existing.setStatus(User.UserStatus.valueOf(dto.getStatus()));
+        if (dto.getHospitalId() != null) {
+            Hospital hospital = hospitalRepository.findById(dto.getHospitalId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Hospital not found with ID: " + dto.getHospitalId()));
+            existing.setHospital(hospital);
+        }
+        // Reactivate if previously soft-deleted and status set to ACTIVE
+        if (existing.getIsActive() != null && !existing.getIsActive() && dto.getStatus() != null && dto.getStatus().equalsIgnoreCase("ACTIVE")) {
+            existing.setIsActive(true);
+        }
+        User updated = userRepository.save(existing);
+        return com.mhms.medisynapse.dto.ReceptionistResponseDto.builder()
+                .id(updated.getId())
+                .name(updated.getName())
+                .email(updated.getEmail())
+                .role(updated.getRole().name())
+                .phone(updated.getPhone())
+                .nationalId(updated.getNationalId())
+                .hospitalId(updated.getHospital().getId())
+                .hospitalName(updated.getHospital().getName())
+                .status(updated.getStatus().name())
+                .createdAt(updated.getCreatedDt())
+                .lastUpdatedAt(updated.getLastUpdatedDt())
+                .build();
+    }
+
+    @Override
+    public com.mhms.medisynapse.dto.PasswordResetResponseDto resetReceptionistPassword(Long id, com.mhms.medisynapse.dto.ResetPasswordDto resetPasswordDto) {
+        log.info("Resetting password for receptionist with ID: {}", id);
+        User existing = userRepository.findActiveUserById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Receptionist not found with id: " + id));
+        if (existing.getRole() != User.UserRole.RECEPTIONIST) {
+            throw new ResourceNotFoundException("Receptionist not found with id: " + id);
+        }
+        if (existing.getStatus() != User.UserStatus.ACTIVE) {
+            throw new ValidationException("Password reset failed", Map.of("status", "Can only reset password for active receptionists"));
+        }
+        existing.setPasswordHash(passwordEncoder.encode(resetPasswordDto.getNewPassword()));
+        existing.setPasswordResetDt(LocalDateTime.now());
+        User updated = userRepository.save(existing);
+        return PasswordResetResponseDto.builder()
+                .id(updated.getId())
+                .name(updated.getName())
+                .email(updated.getEmail())
+                .passwordResetAt(updated.getPasswordResetDt())
+                .build();
+    }
+
+    @Override
+    public com.mhms.medisynapse.dto.ReceptionistPagedResponseDto getReceptionists(int page, int size, String sortBy, String sortDir, Long hospitalId) {
+        Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Page<User> pageData = userRepository.findReceptionists(hospitalId, pageable);
+        List<com.mhms.medisynapse.dto.ReceptionistListDto> list = pageData.getContent().stream().map(u -> com.mhms.medisynapse.dto.ReceptionistListDto.builder()
+                .id(u.getId())
+                .name(u.getName())
+                .email(u.getEmail())
+                .phone(u.getPhone())
+                .hospitalId(u.getHospital() != null ? u.getHospital().getId() : null)
+                .hospitalName(u.getHospital() != null ? u.getHospital().getName() : null)
+                .status(u.getStatus().name())
+                .createdAt(u.getCreatedDt())
+                .lastUpdatedAt(u.getLastUpdatedDt())
+                .build()).toList();
+        PaginationInfo pagination = PaginationInfo.builder()
+                .currentPage(pageData.getNumber())
+                .totalPages(pageData.getTotalPages())
+                .totalElements(pageData.getTotalElements())
+                .pageSize(pageData.getSize())
+                .hasNext(pageData.hasNext())
+                .hasPrevious(pageData.hasPrevious())
+                .build();
+        return com.mhms.medisynapse.dto.ReceptionistPagedResponseDto.builder()
+                .data(list)
+                .pagination(pagination)
+                .build();
+    }
+
+    @Override
+    public com.mhms.medisynapse.dto.ReceptionistResponseDto getReceptionistById(Long id) {
+        User user = userRepository.findActiveUserById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Receptionist not found with id: " + id));
+        if (user.getRole() != User.UserRole.RECEPTIONIST) {
+            throw new ResourceNotFoundException("Receptionist not found with id: " + id);
+        }
+        return com.mhms.medisynapse.dto.ReceptionistResponseDto.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .phone(user.getPhone())
+                .nationalId(user.getNationalId())
+                .hospitalId(user.getHospital() != null ? user.getHospital().getId() : null)
+                .hospitalName(user.getHospital() != null ? user.getHospital().getName() : null)
+                .status(user.getStatus().name())
+                .createdAt(user.getCreatedDt())
+                .lastUpdatedAt(user.getLastUpdatedDt())
+                .build();
+    }
+
+    @Override
+    public void deleteReceptionist(Long id) {
+        log.info("Soft deleting receptionist with ID: {}", id);
+        User user = userRepository.findActiveUserById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Receptionist not found with id: " + id));
+        if (user.getRole() != User.UserRole.RECEPTIONIST) {
+            throw new ResourceNotFoundException("Receptionist not found with id: " + id);
+        }
+        user.setIsActive(false); // soft delete
+        userRepository.save(user);
+    }
 }

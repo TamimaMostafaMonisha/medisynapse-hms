@@ -61,6 +61,9 @@ public class SecurityConfig {
                         // Billing endpoints
                         .requestMatchers("/api/v1/billing/**").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST")
 
+                        // Receptionist management endpoints
+                        .requestMatchers("/api/v1/receptionists/**").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN")
+
                         // Receptionist profile endpoint
                         .requestMatchers("/api/v1/receptionist/**").hasAnyRole("SUPER_ADMIN", "HOSPITAL_ADMIN", "RECEPTIONIST")
 

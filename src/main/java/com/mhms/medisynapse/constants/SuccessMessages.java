@@ -173,6 +173,14 @@ public final class SuccessMessages {
     public static final String API_KEY_GENERATED = "API key generated successfully";
     public static final String INTEGRATION_TESTED = "Integration tested successfully";
 
+    // ==================== RECEPTIONIST SUCCESS MESSAGES ====================
+    public static final String RECEPTIONIST_CREATED = "Receptionist created successfully";
+    public static final String RECEPTIONIST_UPDATED = "Receptionist updated successfully";
+    public static final String RECEPTIONIST_DELETED = "Receptionist deleted successfully";
+    public static final String RECEPTIONIST_RETRIEVED = "Receptionist information retrieved successfully";
+    public static final String RECEPTIONIST_LIST_RETRIEVED = "Receptionist list retrieved successfully";
+    public static final String RECEPTIONIST_PASSWORD_RESET = "Receptionist password reset successfully";
+
     private SuccessMessages() {
         // Private constructor to prevent instantiation
     }
