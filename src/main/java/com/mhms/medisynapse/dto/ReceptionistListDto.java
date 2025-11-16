@@ -17,5 +17,5 @@ public class ReceptionistListDto {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime lastUpdatedAt;
+    private boolean deleted;
 }
-

@@ -555,13 +555,14 @@ public class UserServiceImpl implements UserService {
                 .status(saved.getStatus().name())
                 .createdAt(saved.getCreatedDt())
                 .lastUpdatedAt(saved.getLastUpdatedDt())
+                .deleted(false)
                 .build();
     }
 
     @Override
     public com.mhms.medisynapse.dto.ReceptionistResponseDto updateReceptionist(Long id, com.mhms.medisynapse.dto.UpdateReceptionistDto dto) {
         log.info("Updating receptionist with ID: {}", id);
-        User existing = userRepository.findActiveUserById(id)
+        User existing = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Receptionist not found with id: " + id));
         if (existing.getRole() != User.UserRole.RECEPTIONIST) {
             throw new ResourceNotFoundException("Receptionist not found with id: " + id);
@@ -592,8 +593,8 @@ public class UserServiceImpl implements UserService {
                     .orElseThrow(() -> new ResourceNotFoundException("Hospital not found with ID: " + dto.getHospitalId()));
             existing.setHospital(hospital);
         }
-        // Reactivate if previously soft-deleted and status set to ACTIVE
-        if (existing.getIsActive() != null && !existing.getIsActive() && dto.getStatus() != null && dto.getStatus().equalsIgnoreCase("ACTIVE")) {
+        // Reactivate if soft-deleted and status requested ACTIVE
+        if (Boolean.FALSE.equals(existing.getIsActive()) && dto.getStatus() != null && dto.getStatus().equalsIgnoreCase("ACTIVE")) {
             existing.setIsActive(true);
         }
         User updated = userRepository.save(existing);
@@ -609,6 +610,7 @@ public class UserServiceImpl implements UserService {
                 .status(updated.getStatus().name())
                 .createdAt(updated.getCreatedDt())
                 .lastUpdatedAt(updated.getLastUpdatedDt())
+                .deleted(!updated.getIsActive())
                 .build();
     }
 
@@ -649,6 +651,7 @@ public class UserServiceImpl implements UserService {
                 .status(u.getStatus().name())
                 .createdAt(u.getCreatedDt())
                 .lastUpdatedAt(u.getLastUpdatedDt())
+                .deleted(u.getIsActive() != null && !u.getIsActive())
                 .build()).toList();
         PaginationInfo pagination = PaginationInfo.builder()
                 .currentPage(pageData.getNumber())
@@ -666,7 +669,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public com.mhms.medisynapse.dto.ReceptionistResponseDto getReceptionistById(Long id) {
-        User user = userRepository.findActiveUserById(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Receptionist not found with id: " + id));
         if (user.getRole() != User.UserRole.RECEPTIONIST) {
             throw new ResourceNotFoundException("Receptionist not found with id: " + id);
@@ -683,18 +686,23 @@ public class UserServiceImpl implements UserService {
                 .status(user.getStatus().name())
                 .createdAt(user.getCreatedDt())
                 .lastUpdatedAt(user.getLastUpdatedDt())
+                .deleted(!user.getIsActive())
                 .build();
     }
 
     @Override
     public void deleteReceptionist(Long id) {
         log.info("Soft deleting receptionist with ID: {}", id);
-        User user = userRepository.findActiveUserById(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Receptionist not found with id: " + id));
         if (user.getRole() != User.UserRole.RECEPTIONIST) {
             throw new ResourceNotFoundException("Receptionist not found with id: " + id);
         }
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            throw new ValidationException("Deletion failed", Map.of("receptionist", "Receptionist already deleted"));
+        }
         user.setIsActive(false); // soft delete
+        user.setStatus(User.UserStatus.INACTIVE); // also update status
         userRepository.save(user);
     }
 }

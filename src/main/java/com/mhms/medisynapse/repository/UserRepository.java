@@ -75,10 +75,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "AND u.isActive = true")
     Page<User> findHospitalAdmins(@Param("hospitalId") Long hospitalId, Pageable pageable);
 
-    @Query("SELECT u FROM User u WHERE u.hospital.id = :hospitalId AND u.role = 'RECEPTIONIST' AND u.isActive = true ORDER BY u.name ASC")
+    @Query("SELECT u FROM User u WHERE u.hospital.id = :hospitalId AND u.role = 'RECEPTIONIST' ORDER BY u.name ASC")
     List<User> findReceptionistsByHospital(@Param("hospitalId") Long hospitalId);
 
-    @Query("SELECT u FROM User u WHERE (:hospitalId IS NULL OR u.hospital.id = :hospitalId) AND u.role = 'RECEPTIONIST' AND u.isActive = true")
+    @Query("SELECT u FROM User u WHERE (:hospitalId IS NULL OR u.hospital.id = :hospitalId) AND u.role = 'RECEPTIONIST'")
     Page<User> findReceptionists(@Param("hospitalId") Long hospitalId, Pageable pageable);
 
     @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u WHERE u.email = :email AND u.role = 'RECEPTIONIST' AND u.isActive = true")
