@@ -42,11 +42,9 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
                                            Pageable pageable);
 
     @Query("SELECT p FROM Patient p " +
-            "JOIN FETCH p.patientHospitals ph " +
             "LEFT JOIN FETCH p.address " +
-            "WHERE p.id = :patientId AND ph.hospital.id = :hospitalId AND p.isActive = true")
-    Patient findPatientByIdAndHospitalId(@Param("patientId") Long patientId,
-                                         @Param("hospitalId") Long hospitalId);
+            "WHERE p.id = :patientId AND p.isActive = true")
+    Patient findPatientById(@Param("patientId") Long patientId);
 
     // Doctor-specific patient queries
     @Query("SELECT DISTINCT p FROM Patient p " +

@@ -16,6 +16,8 @@ public interface BillingService {
 
     BillingResponseDto createBill(CreateBillRequestDto request, Long createdBy);
 
+    BillingResponseDto updateBill(Long billingId, CreateBillRequestDto request, Long updatedBy);
+
     BillingResponseDto getBillingById(Long billingId);
 
     Billing getBillingEntityById(Long billingId); // For internal use
@@ -31,5 +33,6 @@ public interface BillingService {
     Page<BillingResponseDto> getBillingsByPatientId(Long patientId, Billing.BillingStatus status, Pageable pageable);
 
     Page<BillingResponseDto> getBillingsByHospitalId(Long hospitalId, Billing.BillingStatus status, Pageable pageable);
-}
 
+    Page<BillingResponseDto> getAllActiveBillings(Pageable pageable);
+}

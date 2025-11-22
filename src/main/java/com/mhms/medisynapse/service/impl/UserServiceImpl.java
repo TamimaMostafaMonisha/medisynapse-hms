@@ -279,18 +279,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<AvailableHospitalDto> getAvailableHospitals() {
-        log.info("Fetching available hospitals without assigned admins");
+        log.info("Fetching all available hospitals");
 
-        // Get IDs of hospitals that don't have hospital admins
-        List<Long> availableHospitalIds = userRepository.findAvailableHospitalIds();
-
-        if (availableHospitalIds.isEmpty()) {
-            log.info("No available hospitals found");
-            return List.of();
-        }
-
-        // Get hospital details ordered by name
-        List<Hospital> hospitals = hospitalRepository.findAvailableHospitalsByIds(availableHospitalIds);
+        // Get all active hospitals ordered by name
+        List<Hospital> hospitals = hospitalRepository.findAllActiveHospitalsWithAddress();
 
         log.info("Found {} available hospitals", hospitals.size());
 

@@ -111,6 +111,84 @@ public class BillingServiceImpl implements BillingService {
     }
 
     @Override
+    @Transactional
+    public BillingResponseDto updateBill(Long billingId, CreateBillRequestDto request, Long updatedBy) {
+        log.info("Updating bill ID: {}", billingId);
+
+        // Fetch existing billing
+        Billing billing = getBillingEntityById(billingId);
+
+        // Check if billing can be updated (only DRAFT or PARTIALLY_PAID bills can be updated)
+        if (billing.getStatus() == Billing.BillingStatus.PAID ||
+            billing.getStatus() == Billing.BillingStatus.REFUNDED ||
+            billing.getStatus() == Billing.BillingStatus.CANCELLED) {
+            throw new RuntimeException("Cannot update billing with status: " + billing.getStatus());
+        }
+
+        // Validate patient exists
+        Patient patient = patientRepository.findById(request.getPatientId())
+                .orElseThrow(() -> new RuntimeException("Patient not found with ID: " + request.getPatientId()));
+
+        // Validate hospital exists
+        Hospital hospital = hospitalRepository.findById(request.getHospitalId())
+                .orElseThrow(() -> new RuntimeException("Hospital not found with ID: " + request.getHospitalId()));
+
+        // Validate appointment if provided
+        Appointment appointment = null;
+        if (request.getAppointmentId() != null) {
+            appointment = appointmentRepository.findById(request.getAppointmentId())
+                    .orElseThrow(() -> new RuntimeException("Appointment not found with ID: " + request.getAppointmentId()));
+        }
+
+        // Delete existing bill items
+        List<BillItem> existingItems = billItemRepository.findByBillingId(billingId);
+        billItemRepository.deleteAll(existingItems);
+        log.info("Deleted {} existing bill items for billing ID: {}", existingItems.size(), billingId);
+
+        // Calculate total from new items
+        BigDecimal itemsTotal = request.getItems().stream()
+                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Calculate net amount
+        BigDecimal discountAmount = request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO;
+        BigDecimal taxAmount = request.getTaxAmount() != null ? request.getTaxAmount() : BigDecimal.ZERO;
+        BigDecimal netAmount = itemsTotal.subtract(discountAmount).add(taxAmount);
+
+        // Update billing
+        billing.setPatient(patient);
+        billing.setHospital(hospital);
+        billing.setAppointment(appointment);
+        billing.setTotalAmount(itemsTotal);
+        billing.setDiscountAmount(discountAmount);
+        billing.setTaxAmount(taxAmount);
+        billing.setNetAmount(netAmount);
+        billing.setOutstandingAmount(netAmount.subtract(billing.getPaidAmount()));
+        billing.setNotes(request.getNotes());
+        billing.setUpdatedBy(updatedBy);
+
+        billing = billingRepository.save(billing);
+        log.info("Billing updated with ID: {}", billing.getId());
+
+        // Create new bill items
+        for (BillItemDto itemDto : request.getItems()) {
+            BillItem billItem = new BillItem();
+            billItem.setBilling(billing);
+            billItem.setServiceType(itemDto.getServiceType());
+            billItem.setDescription(itemDto.getDescription());
+            billItem.setQuantity(itemDto.getQuantity());
+            billItem.setUnitPrice(itemDto.getUnitPrice());
+            billItem.setTotal(itemDto.getUnitPrice().multiply(BigDecimal.valueOf(itemDto.getQuantity())));
+            billItem.setCreatedBy(updatedBy);
+            billItem.setUpdatedBy(updatedBy);
+            billItemRepository.save(billItem);
+        }
+
+        log.info("Created {} new bill items for billing ID: {}", request.getItems().size(), billing.getId());
+        return BillingResponseDto.fromEntity(billing);
+    }
+
+    @Override
     public BillingResponseDto getBillingById(Long billingId) {
         log.info("Fetching billing with ID: {}", billingId);
         Billing billing = billingRepository.findById(billingId)
@@ -232,9 +310,15 @@ public class BillingServiceImpl implements BillingService {
         }
     }
 
+    @Override
+    public Page<BillingResponseDto> getAllActiveBillings(Pageable pageable) {
+        log.info("Fetching all active billings for super admin");
+        return billingRepository.findAllActiveBillings(pageable)
+                .map(BillingResponseDto::fromEntity);
+    }
+
     private String generateBillNumber() {
         // Generate unique bill number (you can customize this logic)
         return "BILL-" + System.currentTimeMillis();
     }
 }
-

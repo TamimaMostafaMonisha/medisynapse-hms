@@ -71,4 +71,7 @@ public interface HospitalRepository extends JpaRepository<Hospital, Long> {
 
     @Query("SELECT h FROM Hospital h LEFT JOIN FETCH h.address WHERE h.id IN :hospitalIds ORDER BY h.name")
     List<Hospital> findAvailableHospitalsByIds(@Param("hospitalIds") List<Long> hospitalIds);
+
+    @Query("SELECT h FROM Hospital h LEFT JOIN FETCH h.address WHERE h.isActive = true ORDER BY h.name")
+    List<Hospital> findAllActiveHospitalsWithAddress();
 }

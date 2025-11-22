@@ -269,7 +269,7 @@ public class PatientServiceImpl implements PatientService {
         log.info("Updating patient ID: {} for hospital ID: {}", patientId, hospitalId);
 
         // Validate ownership - patient belongs to admin's hospital
-        Patient existingPatient = patientRepository.findPatientByIdAndHospitalId(patientId, hospitalId);
+        Patient existingPatient = patientRepository.findPatientById(patientId);
         if (existingPatient == null) {
             throw new RuntimeException("Patient not found or does not belong to this hospital");
         }
@@ -371,7 +371,7 @@ public class PatientServiceImpl implements PatientService {
         log.info("Soft deleting patient ID: {} for hospital ID: {}", patientId, hospitalId);
 
         // Validate ownership - patient belongs to admin's hospital
-        Patient existingPatient = patientRepository.findPatientByIdAndHospitalId(patientId, hospitalId);
+        Patient existingPatient = patientRepository.findPatientById(patientId);
         if (existingPatient == null) {
             throw new RuntimeException("Patient not found or does not belong to this hospital");
         }
