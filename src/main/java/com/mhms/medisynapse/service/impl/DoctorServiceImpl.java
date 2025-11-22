@@ -269,8 +269,9 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
     private DoctorPatientDto mapToPatientDto(Patient patient, Long doctorId) {
-        // Get current admission if exists
-        Optional<Admission> currentAdmission = admissionRepository.findCurrentAdmissionByPatientId(patient.getId());
+        // Get current admissions if exist
+        List<Admission> currentAdmissions = admissionRepository.findCurrentAdmissionByPatientId(patient.getId());
+        Admission currentAdmission = currentAdmissions.isEmpty() ? null : currentAdmissions.get(0);
 
         // Get last visit date
         LocalDateTime lastVisitDate = appointmentRepository.findLastVisitDateByPatientAndDoctor(
@@ -312,12 +313,11 @@ public class DoctorServiceImpl implements DoctorService {
                 .updatedAt(patient.getLastUpdatedDt());
 
         // Add admission details if patient is currently admitted
-        if (currentAdmission.isPresent()) {
-            Admission admission = currentAdmission.get();
-            builder.admissionDate(admission.getCreatedDt())
-                    .roomNumber(admission.getBedNo())
+        if (currentAdmission != null) {
+            builder.admissionDate(currentAdmission.getCreatedDt())
+                    .roomNumber(currentAdmission.getBedNo())
                     .status("ADMITTED")
-                    .hospitalId(admission.getHospital().getId());
+                    .hospitalId(currentAdmission.getHospital().getId());
         } else {
             builder.status(patient.getStatus().name());
         }
@@ -414,8 +414,9 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
     private PatientDetailDto buildPatientDetail(Patient patient, Long doctorId) {
-        // Get current admission if exists
-        Optional<Admission> currentAdmission = admissionRepository.findCurrentAdmissionByPatientId(patient.getId());
+        // Get current admissions if exist
+        List<Admission> currentAdmissions = admissionRepository.findCurrentAdmissionByPatientId(patient.getId());
+        Admission currentAdmission = currentAdmissions.isEmpty() ? null : currentAdmissions.get(0);
 
         // Calculate age
         Integer age = null;
@@ -448,11 +449,10 @@ public class DoctorServiceImpl implements DoctorService {
         LocalDateTime admissionDate = null;
         String roomNumber = null;
 
-        if (currentAdmission.isPresent()) {
-            Admission admission = currentAdmission.get();
+        if (currentAdmission != null) {
             status = "Inpatient";
-            admissionDate = admission.getAdmissionDate();
-            roomNumber = admission.getBedNo();
+            admissionDate = currentAdmission.getAdmissionDate();
+            roomNumber = currentAdmission.getBedNo();
         }
 
         return PatientDetailDto.builder()
