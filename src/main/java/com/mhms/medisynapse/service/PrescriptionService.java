@@ -31,4 +31,6 @@ public interface PrescriptionService {
      * Get prescription history for an appointment
      */
     List<PrescriptionHistoryItem> getPrescriptionHistory(Long appointmentId);
+
+    List<PrescriptionResponseDto> getPrescriptionsByDoctorAndHospital(Long doctorId, Long hospitalId, Pageable pageable);
 }

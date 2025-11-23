@@ -58,5 +58,9 @@ public interface DoctorService {
      * Mark an appointment as completed
      */
     DoctorAppointmentDto completeAppointment(Long appointmentId, Long doctorId);
-}
 
+    /**
+     * Get doctor profile information
+     */
+    DoctorProfileResponseDto getDoctorProfile(Long doctorId);
+}

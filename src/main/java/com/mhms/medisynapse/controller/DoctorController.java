@@ -247,4 +247,21 @@ public class DoctorController {
                 .data(completedAppointment)
                 .build());
     }
+
+    @GetMapping("/profile")
+    @Operation(summary = "Get doctor profile", description = "Retrieve doctor profile information including statistics")
+    public ResponseEntity<ApiResponse<DoctorProfileResponseDto>> getDoctorProfile(
+            @Parameter(description = "Doctor ID", required = true)
+            @RequestParam Long doctorId) {
+
+        log.info("GET /api/v1/doctor/profile - doctorId: {}", doctorId);
+
+        DoctorProfileResponseDto profile = doctorService.getDoctorProfile(doctorId);
+
+        return ResponseEntity.ok(ApiResponse.<DoctorProfileResponseDto>builder()
+                .success(true)
+                .message("Doctor profile retrieved successfully")
+                .data(profile)
+                .build());
+    }
 }

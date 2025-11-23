@@ -398,6 +398,28 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<PrescriptionResponseDto> getPrescriptionsByDoctorAndHospital(Long doctorId, Long hospitalId, Pageable pageable) {
+        log.info("Fetching prescriptions for doctor {} in hospital {}", doctorId, hospitalId);
+
+        // Validate doctor
+        validateDoctor(doctorId);
+
+        // Validate hospital
+        if (!hospitalRepository.existsById(hospitalId)) {
+            throw new ResourceNotFoundException("Hospital not found with ID: " + hospitalId);
+        }
+
+        List<Prescription> prescriptions = prescriptionRepository
+                .findByDoctorAndHospital(doctorId, hospitalId, pageable)
+                .getContent();
+
+        return prescriptions.stream()
+                .map(this::mapToResponseDto)
+                .collect(Collectors.toList());
+    }
+
     // Helper methods
 
     private void validateDoctor(Long doctorId) {

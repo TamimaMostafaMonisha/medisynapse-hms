@@ -7,6 +7,7 @@ import com.mhms.medisynapse.dto.DoctorAppointmentsResponseDto;
 import com.mhms.medisynapse.dto.DoctorDashboardStatisticsDto;
 import com.mhms.medisynapse.dto.DoctorPatientDto;
 import com.mhms.medisynapse.dto.DoctorPatientsResponseDto;
+import com.mhms.medisynapse.dto.DoctorProfileResponseDto;
 import com.mhms.medisynapse.dto.EmergencyContactDto;
 import com.mhms.medisynapse.dto.LabTestOrderResponse;
 import com.mhms.medisynapse.dto.PatientDetailDto;
@@ -251,6 +252,50 @@ public class DoctorServiceImpl implements DoctorService {
         return patients.stream()
                 .map(patient -> mapToPatientDto(patient, doctorId))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public DoctorProfileResponseDto getDoctorProfile(Long doctorId) {
+        log.info("Fetching profile for doctor ID: {}", doctorId);
+
+        User doctor = userRepository.findById(doctorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Doctor not found with ID: " + doctorId));
+
+        if (doctor.getRole() != User.UserRole.DOCTOR) {
+            throw new IllegalArgumentException("User with ID " + doctorId + " is not a doctor");
+        }
+        if (!doctor.getIsActive() || doctor.getStatus() != User.UserStatus.ACTIVE) {
+            throw new IllegalArgumentException("Doctor with ID " + doctorId + " is not active");
+        }
+
+        Long patientCount = appointmentRepository.countDistinctPatientsByDoctor(doctorId);
+        Long todayAppointments = appointmentRepository.countTodayAppointmentsByDoctor(doctorId);
+        Long upcomingAppointments = appointmentRepository.countUpcomingAppointmentsByDoctor(doctorId);
+        Long completedAppointments = appointmentRepository.countCompletedAppointmentsByDoctor(doctorId);
+        Long pendingAppointments = appointmentRepository.countPendingAppointmentsByDoctor(doctorId);
+        Long totalAppointments = completedAppointments + pendingAppointments; // excludes historical cancelled/no-show
+
+        return DoctorProfileResponseDto.builder()
+                .id(doctor.getId())
+                .name(doctor.getName())
+                .email(doctor.getEmail())
+                .phone(doctor.getPhone())
+                .role(doctor.getRole().name())
+                .status(doctor.getStatus().name())
+                .isActive(doctor.getIsActive())
+                .hospitalId(doctor.getHospital() != null ? doctor.getHospital().getId() : null)
+                .hospitalName(doctor.getHospital() != null ? doctor.getHospital().getName() : null)
+                .departmentId(doctor.getDepartment() != null ? doctor.getDepartment().getId() : null)
+                .departmentName(doctor.getDepartment() != null ? doctor.getDepartment().getName() : null)
+                .appointmentCount(totalAppointments)
+                .completedAppointmentCount(completedAppointments)
+                .pendingAppointmentCount(pendingAppointments)
+                .todayAppointmentCount(todayAppointments)
+                .upcomingAppointmentCount(upcomingAppointments)
+                .patientCount(patientCount)
+                .createdAt(doctor.getCreatedDt())
+                .updatedAt(doctor.getLastUpdatedDt())
+                .build();
     }
 
     // Helper Methods

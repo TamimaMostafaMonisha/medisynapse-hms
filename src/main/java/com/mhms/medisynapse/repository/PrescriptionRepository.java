@@ -94,4 +94,9 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
     @Query("SELECT COUNT(p) FROM Prescription p WHERE p.appointment.id = :appointmentId " +
             "AND p.isActive = true")
     Long countByAppointmentId(@Param("appointmentId") Long appointmentId);
+
+    @Query("SELECT p FROM Prescription p WHERE p.doctor.id = :doctorId AND p.hospital.id = :hospitalId AND p.isActive = true ORDER BY p.prescriptionDate DESC")
+    Page<Prescription> findByDoctorAndHospital(@Param("doctorId") Long doctorId,
+                                               @Param("hospitalId") Long hospitalId,
+                                               Pageable pageable);
 }

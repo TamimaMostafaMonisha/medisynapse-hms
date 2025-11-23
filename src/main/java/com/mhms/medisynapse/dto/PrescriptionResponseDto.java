@@ -30,5 +30,6 @@ public class PrescriptionResponseDto {
     private Integer refillsRemaining;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Long hospitalId;
+    private String hospitalName;
 }
-
